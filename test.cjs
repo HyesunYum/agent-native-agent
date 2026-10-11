@@ -426,6 +426,34 @@ t('D10 parseDialog: AskUserQuestion(단일·다중·Submit 커서·검토·직�
   assert.equal(srv.parseDialog('⏺ plain answer\n' + bar + '\n❯ \n' + bar), null);
 });
 
+t('D11 Codex dialog: selected option stays a button; footer is not an option description', () => {
+  for (const cursor of ['›', '❯', '>']) {
+    for (const selected of [1, 2]) {
+      const screen = ['Folder access', '/home/azureuser/ana/world-ana',
+        'Trust this folder? Codex can read, edit, and', 'run files here, subject to your permission',
+        'settings. Folder settings can run code.', '',
+        `${selected === 1 ? cursor : ' '} 1. Trust and continue`,
+        `${selected === 2 ? cursor : ' '} 2. Back to Agent Command Center`, '',
+        'enter continue · esc back'].join('\n');
+      const d = srv.parseDialog(screen);
+      assert.equal(srv.dialogOpen(screen), true);
+      assert.deepEqual(d.options.map(o => [o.n, o.label, o.cur, o.desc]), [
+        [1, 'Trust and continue', selected === 1, ''], [2, 'Back to Agent Command Center', selected === 2, ''],
+      ]);
+      assert.equal(d.footer, 'enter continue · esc back');
+      assert.ok(!d.title.includes('Trust and continue'));
+      if (cursor === '›') assert.equal(d.navigation, 'arrows');
+    }
+  }
+  const screen = ['Select Model and Effort', '› 1. gpt-6-astra (current)',
+    '  2. gpt-5.5', 'Press enter to confirm or esc to go back'].join('\n');
+  assert.equal(srv.dialogOpen(screen), true);
+  assert.equal(srv.parseDialog(screen).options.length, 2);
+  const wrapped = srv.parseDialog('Folder access\n› 1. Trust and continue\n  2. Go back\nenter continue · esc\nback');
+  assert.equal(wrapped.footer, 'enter continue · esc back');
+  assert.equal(wrapped.options[1].desc, '');
+});
+
 // ---- 관계 그래프(graph.js / NodeRel) ----
 {
   const rg = require('./graph.js');
@@ -567,6 +595,29 @@ t('N2 세션 목록 규칙: <이름>-<yyy>만(yyy 비어 있지 않음, 하이�
 
 // ============================================================ Part B: 통합
 async function integration() {
+  await ta('D12 Codex dialog pick: move to the requested row before Enter; preserve Claude shortcuts', async () => {
+    const source = fs.readFileSync(path.join(ROOT, 'channel-core.js'), 'utf8');
+    const actionSource = source.slice(source.indexOf('  async function dialogAction('), source.indexOf('  const server = http.createServer', source.indexOf('  async function dialogAction(')));
+    const action = require('node:vm').runInNewContext(`(${actionSource.trim()})`, { parseDialog: srv.parseDialog });
+    for (const marker of ['›', '❯']) {
+      for (const initial of [1, 2]) {
+        for (const wanted of [1, 2]) {
+          let selected = initial; const keys = [];
+          const runner = { target: 'test', ch: {
+            captureScreen: async () => ['Folder access', 'Trust this folder?',
+              `${selected === 1 ? marker : ' '} 1. Trust and continue`,
+              `${selected === 2 ? marker : ' '} 2. Back to Agent Command Center`, 'enter continue · esc back'].join('\n'),
+            delay: async () => {},
+            tmux: async args => { const key = args[3]; keys.push(key); if (key === 'Up') selected--; if (key === 'Down') selected++; },
+          } };
+          const result = await action(runner, { action: 'pick', n: wanted });
+          assert.equal(result.ok, true);
+          assert.deepEqual(keys, marker === '❯' ? [String(wanted)] : initial === wanted ? ['Enter'] : [wanted < initial ? 'Up' : 'Down', 'Enter']);
+          if (marker === '›') assert.equal(selected, wanted);
+        }
+      }
+    }
+  });
   console.log('\n[Part B] 통합 테스트 (tmux ana-selftest + mock_agent.py + :8811)');
   const FEED_FILE = path.join(SCRATCH, 'int-transcript.jsonl');
   // TMUX_SOCKET='' → 테스트가 mock 세션을 만든 기본 소켓을 서버도 사용(프로덕션 기본은 전용 ana-chat 소켓).

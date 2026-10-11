@@ -151,8 +151,8 @@ function inputBoxReady(screen) {
   const top = seps[seps.length - 2], bot = seps[seps.length - 1];
   for (let i = top + 1; i < bot; i++) {
     const t = lines[i].replace(/\u00A0/g, ' ').trim();
-    if (/^[❯>]\s+\d+\./.test(t)) return false;   // 다이얼로그 메뉴
-    if (/^[❯>]/.test(t)) return true;
+    if (/^[❯›>]\s+\d+\./.test(t)) return false;   // 다이얼로그 메뉴
+    if (/^[❯›>]/.test(t)) return true;
   }
   return false;
 }
@@ -169,11 +169,11 @@ function promptBoxVisible(lines) {
   let prompt = false;
   for (let i = top + 1; i < bot; i++) {
     const t = lines[i].replace(/ /g, ' ').trim();
-    if (/^[❯>]\s+(\d+\.|Submit$|Select\s)/.test(t)) return false;   // 메뉴·Submit 행·선택 오버레이
-    if (/^[❯>](\s|$)/.test(t)) prompt = true;
+    if (/^[❯›>]\s+(\d+\.|Submit$|Select\s)/.test(t)) return false;   // 메뉴·Submit 행·선택 오버레이
+    if (/^[❯›>](\s|$)/.test(t)) prompt = true;
   }
   if (!prompt) return false;
-  for (let i = bot + 1; i < lines.length; i++) if (/Esc to cancel|Enter to (select|confirm)/i.test(lines[i])) return false;
+  for (let i = bot + 1; i < lines.length; i++) if (/Esc (?:to )?(cancel|(?:go )?back)|Enter (?:to )?(select|confirm|continue)/i.test(lines[i])) return false;
   return true;
 }
 
@@ -184,13 +184,13 @@ function dialogOpen(screen) {
   if (promptBoxVisible(lines)) return false;
   const tail = lines.map((l) => l.replace(/ /g, ' ').trim()).filter(Boolean).slice(-20);
   for (const t of tail) {
-    if (/^(Press )?Enter to (select|confirm)\b|(^|·\s*)Esc to cancel\b|^Esc$|^to cancel$/i.test(t)) return true;   // 푸터(좁은 폭에서 쪼개진 것 포함)
+    if (/^(Press )?Enter (?:to )?(select|confirm|continue)\b|(^|·\s*)Esc (?:to )?(cancel|(?:go )?back)\b|^Esc$|^to cancel$/i.test(t)) return true;   // 푸터(좁은 폭에서 쪼개진 것 포함)
     if (/· (Tab\/Arrow keys|↑\/↓) to navigate/.test(t)) return true;
     if (/trust this folder|^Do you trust/i.test(t)) return true;
-    if (/^([▔▁▂▃▄▅▆▇█]+\s*)?([❯>]\s+)?Select (a |model|the )/i.test(t)) return true;   // 모델 선택 등 오버레이 제목
-    if (/^←\s+[☐☒]/.test(t) || /^[❯>]\s+Submit$/.test(t)) return true;
+    if (/^([▔▁▂▃▄▅▆▇█]+\s*)?([❯›>]\s+)?Select (a |model|the )/i.test(t)) return true;   // 모델 선택 등 오버레이 제목
+    if (/^←\s+[☐☒]/.test(t) || /^[❯›>]\s+Submit$/.test(t)) return true;
     if (/^([▔▁▂▃▄▅▆▇█])\1{11,}$/.test(t)) return true;   // 수평 오버레이 구분선(단일 블록 문자 12+ 반복). welcome 로고 제외
-    if (/^[❯>]\s+\d+\.\s/.test(t)) return true;
+    if (/^[❯›>]\s+\d+\.\s/.test(t)) return true;
   }
   return false;
 }
@@ -206,8 +206,8 @@ function dialogOpen(screen) {
 //        Submit                               (다중 선택 제출 행 — 번호 없음)
 //   Enter to select · Tab/Arrow keys to navigate · Esc to cancel
 // 검토 화면: "Review your answers" + "● 질문" / "→ 답" + "❯ 1. Submit answers  2. Cancel"
-const DLG_OPT = /^(\s*)([❯>]?)\s*(\d{1,2})\.\s+(.*)$/;
-const DLG_FOOT = /Enter to (select|confirm)|to navigate|Esc to (cancel|go back)|ctrl\+g to edit/i;
+const DLG_OPT = /^(\s*)([❯›>]?)\s*(\d{1,2})\.\s+(.*)$/;
+const DLG_FOOT = /Enter (?:to )?(select|confirm|continue)|to navigate|Esc (?:to )?(cancel|(?:go )?back)|ctrl\+g to edit/i;
 function parseDialog(screen) {
   const L = String(screen || '').split('\n').map((l) => l.replace(/ /g, ' ').replace(/\s+$/, ''));
   // 마지막 옵션 묶음을 찾는다(본문에 번호 목록이 있어도 화면 맨 아래 메뉴만 대상)
@@ -218,7 +218,7 @@ function parseDialog(screen) {
   for (let i = last - 1; i >= 0; i--) {
     if (DLG_OPT.test(L[i])) { first = i; continue; }
     if (SEP_LINE(L[i]) || !L[i].trim()) { if (i < first - 6) break; continue; }
-    if (/^\s*[❯>]?\s*Submit$/.test(L[i])) continue;              // 다중 선택 Submit 행(커서가 올라가 있을 수 있음)
+    if (/^\s*[❯›>]?\s*Submit$/.test(L[i])) continue;              // 다중 선택 Submit 행(커서가 올라가 있을 수 있음)
     if (/^\s{2,}\S/.test(L[i]) && i > first - 4) continue;       // 옵션 설명 줄
     break;
   }
@@ -254,6 +254,7 @@ function parseDialog(screen) {
     if (inFooter && !DLG_OPT.test(l)) { out.footer += ' ' + t; continue; }   // 좁은 폭에서 줄바꿈된 푸터의 뒷부분
     const m = l.match(DLG_OPT);
     if (m) {
+      if (m[2] === '›') out.navigation = 'arrows'; // Codex: move the cursor, then confirm with Enter.
       let label = m[4].trim(), checked = null;
       const cb = label.match(/^\[([ ✔✓xX])\]\s*(.*)$/);
       if (cb) { checked = cb[1] !== ' '; label = cb[2]; out.multi = true; }
@@ -261,7 +262,7 @@ function parseDialog(screen) {
         other: /^Type something\.?$/i.test(label), chat: /^Chat about this/i.test(label) });
       continue;
     }
-    if (/^[❯>]?\s*Submit$/.test(t)) { out.submit = { cur: /^[❯>]/.test(t) }; continue; }
+    if (/^[❯›>]?\s*Submit$/.test(t)) { out.submit = { cur: /^[❯›>]/.test(t) }; continue; }
     const o = out.options[out.options.length - 1];
     if (o) o.desc = (o.desc ? o.desc + ' ' : '') + t;
   }
@@ -820,13 +821,14 @@ function createChannelServer(opts) {
       const opt = cur.options.find((o) => o.n === n);
       if (!opt) return { status: 400, error: `no option ${body.n}` };
       const text = typeof body.text === 'string' ? body.text.replace(/[\r\n]+/g, ' ').trim().slice(0, 2000) : '';
-      if (n <= 9) await send(String(n));
+      const useArrows = cur.navigation === 'arrows' || n > 9;
+      if (!useArrows) await send(String(n));
       else if (!(await moveTo(n))) return { status: 409, error: 'Could not move to that option' };
       if (opt.other && text) {
         await r.ch.delay(150);
         await send('-l', text);
         if (!cur.multi) { await r.ch.delay(150); await send('Enter'); }
-      } else if (n > 9) await send(cur.multi ? 'Space' : 'Enter');
+      } else if (useArrows) await send(cur.multi ? 'Space' : 'Enter');
       return { ok: true };
     }
     return { status: 400, error: 'action must be pick|submit|next|prev|esc' };
