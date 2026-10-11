@@ -1,0 +1,16 @@
+{
+  "name": "ANA — browser quick start",
+  "build": { "dockerfile": "Dockerfile" },
+  "remoteUser": "node",
+  "features": { "ghcr.io/devcontainers/features/sshd:1": {} },
+  "forwardPorts": [8809],
+  "portsAttributes": {
+    "8809": { "label": "ANA", "onAutoForward": "openBrowser", "requireLocalPort": true }
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash .devcontainer/start.sh",
+  "customizations": {
+    "codespaces": { "openFiles": ["docs/codespaces.ko.md"] }
+  },
+  "hostRequirements": { "cpus": 2, "memory": "4gb", "storage": "16gb" }
+}
