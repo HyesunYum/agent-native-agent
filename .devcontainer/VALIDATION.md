@@ -1,6 +1,6 @@
 # Codespaces validation record
 
-Status: **in progress — not released to main**. Checked on 2026-10-11.
+Status: **passed**. Checked on 2026-10-11 against runtime/setup commit `e6ffc69`; the release adds documentation only.
 
 Environment: GitHub Codespaces `basicLinux32gb` (2 cores / 8 GB), Linux x64,
 `mcr.microsoft.com/devcontainers/javascript-node:5.2.3-24-bookworm`,
@@ -20,11 +20,17 @@ Node 24.21.0, tmux 3.3a, Claude Code 2.1.296.
 | Same-origin POST through Codespaces HTTPS forwarding | 200, workspace selection succeeded |
 | SSE | Connected (EventSource.OPEN) |
 | Mobile chat layout | Passed at 390×844; chat fits viewport |
-| Claude initial login | Pending user authentication |
-| Real prompt and response in ANA | Pending login |
-| Stop/start, data and login persistence | Pending |
-| Full rebuild, data and login persistence | Pending |
-| Fresh creation from final release configuration | Pending |
+| Claude initial login | Passed with user-completed subscription login |
+| Real prompt and response in ANA | Passed through the browser Send button; response and page reload verified |
+| Stop/start, data and login persistence | Passed with the final startup script: login, test note and original Claude session retained |
+| Full rebuild, data and login persistence | Passed; same Claude session resumed and recalled the prior verification marker without being given it again |
+| Fresh creation from final release configuration | Passed in a second, empty codespace; onboarding and private dashboard started automatically, repeated setup/start and all 88 tests passed |
 
-Do not remove the draft notices or publish the README quick-start button until all
-pending checks pass. Never attach credentials or OAuth codes to this record.
+The initial browser automation clicked before the app installed its handlers;
+waiting for app initialization resolved this test timing issue. No app workaround
+was used for the successful browser conversation checks.
+
+The final configuration pins the tested devcontainer image tag and Claude CLI
+version. Packages, account policies and upstream availability may still change;
+this record describes the checks performed, not a guarantee of every future
+provider version. No credentials or OAuth codes are included in this record.

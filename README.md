@@ -80,6 +80,14 @@ There is **no bridge and no MCP**. The browser posts to the server, the server i
 
 ---
 
+## Start without local installation — GitHub Codespaces
+
+Run ANA in your browser without installing WSL, Node or tmux on your computer. Bring a GitHub account and Claude Code access, then sign in to Claude once inside the codespace.
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/tykimos/agent-native-agent?ref=main)
+
+**[Browser quick-start guide](docs/codespaces.md)** — automatic setup → Claude login → open **ANA / 8809** in Ports. Keep the port **Private**. Codespaces usage is billed separately from Claude; ANA stops when the codespace stops.
+
 ## Quickstart — run the base (2 min)
 
 **Prerequisites:** Node ≥ 24, tmux, and a coding-agent CLI (e.g. [Claude Code](https://claude.com/claude-code)). The runtime (`channel-core.js`) has zero dependencies; the base app has one, [NodeRel](https://github.com/tykimos/NodeRel), installed from GitHub with `npm install`.

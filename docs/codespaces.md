@@ -1,6 +1,5 @@
 # Start ANA in your browser without local installation
 
-> **Validation-branch draft:** automatic installation, dashboard access and Linux tests have passed. Claude sign-in, real conversations, restart and rebuild checks must finish before this becomes a release guide.
 
 [한국어](codespaces.ko.md) · **English**
 
@@ -23,8 +22,10 @@ GitHub may show a development-port notice. Check that the address belongs to you
 
 3. Choose a terminal style and your account's login method.
 4. If a browser does not open automatically, open the displayed login URL yourself. If you receive a login code, paste it into **Claude's terminal prompt**, never an issue or chat message.
-5. Complete onboarding and confirm whether you trust the project folder.
+5. Complete onboarding and confirm whether you trust the project folder. If **Try the new fullscreen renderer?** appears, choose **Not now**; ANA was tested with the existing terminal renderer.
 6. Press **Ctrl+B**, release both keys, then press **D** to detach. Claude keeps running.
+
+**If the login URL looks truncated:** do not reconstruct it from wrapped lines inside tmux. Detach with **Ctrl+B**, then **D**, and print the complete clipboard URL with `tmux show-buffer`. Open that terminal link, then run `bash .devcontainer/connect.sh` again to paste the login code into Claude.
 
 Users must complete authentication themselves. Subscription login does not require creating an API key. Organization policies may restrict login methods.
 

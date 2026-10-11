@@ -80,6 +80,14 @@ flowchart TB
 
 ---
 
+## 설치 없이 시작 — GitHub Codespaces
+
+PC에 WSL·Node·tmux를 설치하지 않고 브라우저에서 ANA를 실행합니다. GitHub 계정과 Claude Code 사용 권한이 필요하며, 최초 한 번 Claude에 로그인합니다.
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/tykimos/agent-native-agent?ref=main)
+
+**[브라우저 시작 매뉴얼](docs/codespaces.ko.md)** — 환경 자동 설치 → Claude 로그인 → Ports의 **ANA / 8809** 열기. 포트는 **Private**으로 유지합니다. Codespaces 사용량은 Claude 이용료와 별도로 계산되며, Codespace가 중지되면 ANA도 멈춥니다.
+
 ## 빠른 시작 — 베이스 실행 (2분)
 
 **사전 요구사항:** Node ≥ 24, tmux, 그리고 코딩 에이전트 CLI(예: [Claude Code](https://claude.com/claude-code)). 런타임(`channel-core.js`)은 의존성이 없고, 베이스 앱은 [NodeRel](https://github.com/tykimos/NodeRel) 하나를 `npm install`로 GitHub에서 받습니다.
