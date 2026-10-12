@@ -17,7 +17,21 @@ const login = `Browser didn't open? Use the url below to sign in (c to copy)\n\n
 let server, browser;
 (async () => {
  fs.writeFileSync(path.join(tmp,'screen'),theme);
- fs.writeFileSync(path.join(tmp,'agent.py'), `import sys,os,tty,select,time,json\nroot=sys.argv[1]\ntty.setraw(sys.stdin.fileno())\nlast=None\nwhile True:\n s=open(root+'/screen').read()\n if s!=last:\n  sys.stdout.write('\\x1b[2J\\x1b[H'+s.replace('\\n','\\r\\n'));sys.stdout.flush();last=s\n if select.select([sys.stdin],[],[],0.02)[0]:\n  b=os.read(sys.stdin.fileno(),4096)\n  with open(root+'/keys','ab') as f:f.write(b)\n`);
+ fs.writeFileSync(path.join(tmp,'agent.py'), String.raw`import sys,os,tty,select
+root=sys.argv[1]
+tty.setraw(sys.stdin.fileno())
+last=None
+while True:
+ s=open(root+'/screen').read()
+ if s!=last:
+  sys.stdout.write('\x1b[2J\x1b[H'+s.replace('\n','\r\n'));sys.stdout.flush();last=s
+ if select.select([sys.stdin],[],[],0.02)[0]:
+  b=os.read(sys.stdin.fileno(),4096)
+  with open(root+'/keys','ab') as f:f.write(b)
+  if 'Accessing workspace:' in s and b'\x1b[B' in b:
+   s=s.replace('❯ No, exit','  No, exit').replace('  Yes, I trust this folder','❯ Yes, I trust this folder')
+   with open(root+'/screen','w') as f:f.write(s)
+`);
  tmux('new-session','-d','-s',session,'-x','200','-y','50','python3',path.join(tmp,'agent.py'),tmp);
  const env={...process.env,PORT:'0',BIND:'127.0.0.1',ANA_NAME:'base-ana',TMUX_SESSION:session,TMUX_SOCKET:'',ANA_DATA_DIR:path.join(tmp,'data'),ANA_SEED:'0',NOTIFY_AGENT:'0'};
  delete env.ANA_TEST;delete env.ANA_PANE_ID;
@@ -53,10 +67,23 @@ let server, browser;
  fs.writeFileSync(path.join(tmp,'screen'),'Login successful.\nPress Enter to continue');
  await page.getByRole('button',{name:'Continue',exact:true}).waitFor();
  await page.getByRole('button',{name:'Continue',exact:true}).click();await page.waitForFunction(()=>!dialogBusy);
+ fs.writeFileSync(path.join(tmp,'screen'),"Welcome to Claude Code v2.1.296\n.......█ █   █ █..........................░..........▒....\n\nSecurity notes:\n\n 1. Claude can make mistakes.\n    You're responsible for Claude's actions and should always review them, especially when running code.\n\n 2. Due to prompt injection risks, only use it with code you trust\n    Learn more: https://code.claude.com/docs/en/security\n\nPress Enter to continue…");
+ await page.locator('.dq-notice').waitFor();
+ assert.equal(await page.locator('#dlgQ .dq-opt').count(),0);
+ assert.match(await page.locator('.dq-notice').innerText(),/1\. Claude can make mistakes/);
+ assert.ok(!(await page.locator('#dlgQ').innerText()).includes('█'));
+ assert.equal(await page.locator('#dlgQ [data-act="esc"]').count(),0);
+ await page.getByRole('button',{name:'Continue',exact:true}).click();await page.waitForFunction(()=>!dialogBusy);
+ assert.ok(fs.readFileSync(path.join(tmp,'keys'),'utf8').endsWith('\r'));
  fs.writeFileSync(path.join(tmp,'screen'),'Do you trust the files in this folder?\n❯ 1. Yes, I trust this folder\n  2. No, exit\nEnter to confirm · Esc to cancel');
  await page.getByRole('button',{name:/Yes, I trust/}).waitFor();
  await page.getByRole('button',{name:/Yes, I trust/}).click();await page.waitForFunction(()=>!dialogBusy);
  assert.ok(fs.readFileSync(path.join(tmp,'keys'),'utf8').endsWith('1'));
+ fs.writeFileSync(path.join(tmp,'screen'),"Accessing workspace:\n\n /workspaces/agent-native-agent\n\n Quick safety check: Is this a project you created or one you trust?\n\n Claude Code'll be able to read, edit, and execute files here.\n\n Security guide\n\n❯ No, exit\n  Yes, I trust this folder\n\n Enter to confirm · Esc to cancel");
+ await page.waitForFunction(()=>dialogInfo?.stage==='trust');
+ assert.equal(await page.locator('#dlgQ .dq-opt.cur').innerText(),'1\nNo, exit');
+ await page.getByRole('button',{name:/Yes, I trust/}).click();await page.waitForFunction(()=>!dialogBusy);
+ assert.ok(fs.readFileSync(path.join(tmp,'keys'),'utf8').endsWith('\x1b[B\r'));
  await page.reload();await page.getByRole('button',{name:/Yes, I trust/}).waitFor();
  assert.deepEqual(errors,[]);result.errors=errors;result.passed=true;
  const sorted=[...result.transitionMs].sort((a,b)=>a-b);result.medianMs=sorted[Math.floor(sorted.length/2)];result.maxMs=sorted.at(-1);

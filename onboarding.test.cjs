@@ -93,3 +93,43 @@ test('login code redaction covers later scrollback echoes, including line wraps'
   assert.equal(ch.commit({role:'user',text:'Dark mode\nPaste code here if prompted > UNREMEMBERED-CODE\nLogin successful'}).text,'[Claude login screen]');
  } finally { fs.rmSync(tmp,{recursive:true,force:true}); }
 });
+
+// Exact content of the live Claude 2.1.296 screen reported by the user.
+const securityNotice = `Welcome to Claude Code v2.1.296
+.......█ █   █ █..........................░..........▒....
+
+ Security notes:
+
+ 1. Claude can make mistakes.
+    You're responsible for Claude's actions and should always
+    review them, especially when running code.
+
+ 2. Due to prompt injection risks, only use it with code you trust
+    Learn more: https://code.claude.com/docs/en/security
+
+ Press Enter to continue…
+`;
+test('actual numbered Security notes are read-only prose with Continue, not choices', async () => {
+ const d=parseDialog(securityNotice);
+ assert.equal(dialogOpen(securityNotice),true);assert.equal(d.stage,'notice');
+ assert.equal(d.options.length,0);assert.equal(d.continue,true);
+ assert.match(d.intro,/1\. Claude can make mistakes/);assert.match(d.intro,/2\. Due to prompt injection risks/);
+ assert.ok(!d.intro.includes('█'));assert.ok(!d.intro.includes('Press Enter'));
+ const r=runner(securityNotice);assert.equal((await action(r,{action:'continue'})).ok,true);
+ assert.deepEqual(r.keys.map(k=>Array.from(k).slice(3)),[['Enter']]);
+ const pick=runner(securityNotice);assert.equal((await action(pick,{action:'pick',n:1})).status,400);assert.equal(pick.keys.length,0);
+});
+test('a real numbered choice cursor is not mistaken for a read-only notice', () => {
+ const d=parseDialog('Security notes:\n❯ 1. Accept\n  2. Cancel\nPress Enter to continue');
+ assert.equal(d.options.length,2);assert.notEqual(d.stage,'notice');
+});
+
+test('actual unnumbered workspace trust prompt preserves the deny default and uses arrows', async () => {
+ let selected=1;const keys=[];
+ const screen=()=>`Accessing workspace:\n\n /workspaces/agent-native-agent\n\n Quick safety check: Is this a project you created or one you trust?\n Claude Code'll be able to read, edit, and execute files here.\n Security guide\n\n ${selected===1?'❯':' '} No, exit\n ${selected===2?'❯':' '} Yes, I trust this folder\n\n Enter to confirm · Esc to cancel`;
+ const d=parseDialog(screen());assert.equal(d.stage,'trust');assert.equal(d.navigation,'arrows');
+ assert.equal(d.options[0].label,'No, exit');assert.equal(d.options[0].cur,true);
+ assert.match(d.intro,/\/workspaces\/agent-native-agent/);assert.match(d.intro,/read, edit, and execute/);
+ const r={target:'trust-test',ch:{captureScreen:async()=>screen(),delay:async()=>{},tmux:async args=>{keys.push(args[3]);if(args[3]==='Down')selected++;}}};
+ assert.equal((await action(r,{action:'pick',n:2})).ok,true);assert.deepEqual(keys,['Down','Enter']);
+});

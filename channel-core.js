@@ -189,6 +189,22 @@ function parseOnboarding(screen) {
     }
     if (out.options.length && out.options.some(o => o.cur)) return out;
   }
+  const workspace = lines.findIndex(l => /^\s*Accessing workspace:\s*$/.test(l));
+  if (workspace >= 0 && /Quick safety check:/.test(text)) {
+    const out = onboardingDialog('trust', 'Trust this workspace?');
+    out.navigation = 'arrows';
+    let firstOption = -1;
+    for (let i = workspace + 1; i < lines.length; i++) {
+      const m = lines[i].match(/^\s*([❯›>]?)\s*(No, exit|Yes, I trust this folder)\s*$/);
+      if (!m) continue;
+      if (firstOption < 0) firstOption = i;
+      out.options.push({ n: out.options.length + 1, label: m[2], desc: '', cur: !!m[1], checked: null });
+    }
+    if (out.options.length === 2 && out.options.some(o => o.cur)) {
+      out.intro = lines.slice(workspace + 1, firstOption).filter(l => l.trim() !== 'Security guide').join('\n').trim();
+      return out;
+    }
+  }
   if (/^\s*Paste code here(?: if prompted)?\s*[:>]/m.test(text)) {
     const out = onboardingDialog('login', 'Log in to Claude');
     out.url = loginUrl(text);
@@ -200,11 +216,12 @@ function parseOnboarding(screen) {
   if (/^\s*(?:[✔✓]\s*)?Login successful[.!]?(?:\s|$)/m.test(text) && /(?:Press )?Enter to continue/i.test(text)) {
     const out = onboardingDialog('complete', 'Claude login successful'); out.continue = true; return out;
   }
-  // First-run safety notices have a footer but no numbered choices.
+  // Safety notes contain numbered prose, not a menu. A numbered cursor would indicate a real choice.
   const notice = lines.findIndex(l => /^\s*(?:Security notes:?|A few quick notes before we get started:?)\s*$/.test(l));
-  if (notice >= 0 && /(?:Press )?Enter to continue/i.test(text) && !/^\s*[❯›>]?\s*\d+\.\s/m.test(text)) {
+  if (notice >= 0 && /(?:Press )?Enter to continue/i.test(text) && !/^\s*[❯›>]\s*\d+\.\s/m.test(text)) {
     const out = onboardingDialog('notice', lines[notice].trim());
-    out.intro = lines.slice(notice + 1).filter(l => !/(?:Press )?Enter to continue/i.test(l)).join('\n').trim();
+    out.intro = lines.slice(notice + 1).filter(l => !/(?:Press )?Enter to continue/i.test(l)).join('\n').trim()
+      .split(/\n\s*\n/).map(p => p.split('\n').map(l => l.trim()).join(' ')).join('\n\n');
     out.continue = true; return out;
   }
   return null;

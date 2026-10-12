@@ -86,7 +86,7 @@ Run ANA in your browser without installing WSL, Node or tmux on your computer. B
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/tykimos/agent-native-agent?ref=main)
 
-**[Browser quick-start guide](docs/codespaces.md)** — automatic setup → Claude login → open **ANA / 8809** in Ports. Keep the port **Private**. Codespaces usage is billed separately from Claude; ANA stops when the codespace stops.
+**[Browser quick-start guide](docs/codespaces.md)** — automatic setup → open **ANA / 8809** in Ports → complete Claude setup in ANA chat. Keep the port **Private**. Codespaces usage is billed separately from Claude; ANA stops when the codespace stops.
 
 ## Quickstart — run the base (2 min)
 

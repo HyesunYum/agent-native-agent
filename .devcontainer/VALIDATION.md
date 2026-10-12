@@ -2,6 +2,8 @@
 
 Status: **passed**. Checked on 2026-10-11 against runtime/setup commit `e6ffc69`; the release adds documentation only.
 
+Additional browser-only onboarding validation, including the post-login screens and measured timings, is recorded in [ONBOARDING-VALIDATION.md](ONBOARDING-VALIDATION.md) (2026-10-12).
+
 Environment: GitHub Codespaces `basicLinux32gb` (2 cores / 8 GB), Linux x64,
 `mcr.microsoft.com/devcontainers/javascript-node:5.2.3-24-bookworm`,
 Node 24.21.0, tmux 3.3a, Claude Code 2.1.296.

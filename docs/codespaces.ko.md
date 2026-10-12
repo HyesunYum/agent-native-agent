@@ -11,40 +11,34 @@ GitHub Codespaces 안에서 ANA와 Claude Code를 실행합니다. PC에 WSL, No
 
 환경이 준비되면 Node, tmux, Claude Code, ANA 의존성이 설치되고 ANA 서버와 Claude 터미널이 자동으로 시작됩니다. GitHub의 개발 포트 안내 화면이 뜨면 자신의 Codespace 주소인지 확인하고 **Continue**를 누릅니다.
 
-## 2. Claude 로그인 — 최초 한 번
+## 2. ANA에서 Claude 초기 설정하기 — 최초 한 번
 
-1. Codespaces 편집기의 **Terminal → New Terminal**을 엽니다.
-2. 다음 한 줄을 실행합니다. 설치 명령이 아니라, 이미 켜진 Claude 화면을 여는 명령입니다.
+1. 편집기 아래 **Ports**에서 **ANA / 8809** 행의 지구본 아이콘(**Open in Browser**)을 누릅니다. 포트 공개 범위는 **Private**으로 유지합니다. 주소는 `https://<codespace 이름>-8809.app.github.dev` 형태입니다.
+2. ANA 채팅에 표시되는 초기 설정 카드에서 터미널 테마와 사용하는 계정 유형을 선택합니다.
+3. **Open Claude login**을 누릅니다. 새 탭의 Claude 공식 페이지에서 로그인과 동의를 완료합니다.
+4. 인증 코드가 표시되면 ANA로 돌아와 **Paste login code** 전용 입력창에 붙여 넣고 **Complete login**을 누릅니다. 일반 채팅이나 GitHub 이슈에 인증 코드를 보내지 않습니다.
+5. 로그인 완료 카드와 **Security notes** 안내문을 확인하고 **Continue**를 누릅니다. 안내문의 1·2번은 선택지가 아닙니다.
+6. 작업 폴더 경로를 확인한 뒤, 신뢰하는 저장소라면 **Yes, I trust this folder**를 선택합니다. 기본 선택은 **No, exit**입니다. **Try the new fullscreen renderer?**가 나타나면 **Not now**를 선택합니다. ANA는 기존 터미널 렌더러로 검증했습니다.
 
-   ```bash
-   bash .devcontainer/connect.sh
-   ```
+로그인은 사용자가 직접 완료합니다. Claude 구독으로 로그인할 때 별도 API 키를 만들 필요는 없습니다. 조직 정책에 따라 가능한 인증 방식은 달라질 수 있습니다.
 
-3. Claude의 화면 스타일을 선택하고 사용하는 계정 유형으로 로그인합니다.
-4. 브라우저가 자동으로 열리지 않으면 터미널의 로그인 주소를 브라우저에서 엽니다. 인증 코드가 표시되면 **Claude 터미널의 코드 입력란**에 붙여 넣습니다. 비밀번호·토큰·인증 코드는 GitHub 이슈나 채팅에 올리지 않습니다.
-5. 초기 안내와 프로젝트 폴더 신뢰 확인을 마칩니다. **Try the new fullscreen renderer?**가 나타나면 **Not now**를 선택합니다. ANA는 기존 터미널 화면 방식으로 검증했습니다.
-6. **Ctrl+B를 누르고 손을 뗀 뒤 D**를 누릅니다. Claude는 계속 실행되고 터미널 연결만 해제됩니다.
-
-**로그인 주소가 잘리거나 복사되지 않는 경우:** tmux 화면에서 여러 줄로 보이는 주소를 이어 붙이지 마세요. `Ctrl+B`, `D`로 나간 뒤 아래 명령으로 전체 주소를 출력하고, 터미널의 링크를 엽니다. 로그인 코드를 받은 뒤 연결 명령으로 다시 들어가 붙여 넣습니다.
+일반적인 초기 설정에는 터미널 명령이 필요하지 않습니다. 화면을 확인해야 한다면 카드 아래 **Terminal view & keys**를 펼칠 수 있습니다. 지원되지 않는 CLI 화면에서 멈추면 편집기의 새 터미널에서 다음 명령으로 실행 중인 Claude에 연결합니다.
 
 ```bash
-tmux show-buffer
 bash .devcontainer/connect.sh
 ```
 
-로그인은 사용자가 직접 완료해야 합니다. Claude Code 구독으로 로그인할 때 별도 API 키를 만들 필요는 없습니다. 조직 계정은 관리자 정책에 따라 사용할 수 있는 로그인 방식이 다를 수 있습니다.
+터미널 연결을 마치면 **Ctrl+B를 누르고 손을 뗀 뒤 D**로 분리합니다. Claude는 계속 실행됩니다.
 
-## 3. ANA 열고 대화하기
+## 3. 대화 시작하기
 
-편집기 아래 **Ports**에서 **ANA / 8809** 행의 지구본 아이콘(**Open in Browser**)을 누릅니다. 포트 공개 범위는 **Private**을 유지합니다. 주소는 `https://<codespace 이름>-8809.app.github.dev` 형태입니다.
-
-ANA 채팅에서 `안녕`을 보내 응답을 확인합니다. 설치나 로그인에 사용한 터미널은 닫아도 됩니다. 이후에는 이 ANA 주소를 브라우저에서 열어 사용합니다. Codespace가 실행 중이어야 접속됩니다.
+초기 설정이 끝나면 안내 카드가 사라지고 일반 채팅 입력창이 활성화됩니다. `안녕`을 보내 응답을 확인합니다. 이후에는 ANA 주소를 브라우저에서 열어 사용합니다. Codespace가 실행 중이어야 접속됩니다.
 
 ## 다음에 다시 사용하기
 
 [내 Codespaces](https://github.com/codespaces)에서 **기존 환경**을 다시 엽니다. 매번 새 환경을 만들지 않습니다. 재시작하면 ANA와 Claude 프로세스를 자동으로 다시 시작합니다.
 
-로그인 화면이 다시 나오면 위의 연결 명령으로 들어가 확인합니다. 환경이 실행 중인데 ANA가 열리지 않으면 다음을 실행한 뒤 Ports의 8809를 다시 엽니다.
+로그인 화면이 다시 나오면 ANA의 초기 설정 카드에서 진행합니다. 환경이 실행 중인데 ANA가 열리지 않으면 다음을 실행한 뒤 Ports의 8809를 다시 엽니다.
 
 ```bash
 bash .devcontainer/start.sh
@@ -63,7 +57,7 @@ bash .devcontainer/start.sh
 | 증상 | 확인할 곳 |
 |---|---|
 | `Recovery mode`가 표시됨 | 컨테이너 생성 실패입니다. 생성 로그를 확인합니다. 정상 설치 완료로 간주하지 않습니다. |
-| Claude가 로그인/초기 안내에서 멈춤 | `bash .devcontainer/connect.sh`에서 안내를 완료합니다. |
+| Claude가 로그인/초기 안내에서 멈춤 | ANA의 설정 카드를 완료합니다. 화면이 잘못 표시되면 새로고침하고, Terminal view & keys 또는 연결 명령으로 실제 화면을 확인합니다. |
 | 채팅이 `Agent input line is not ready`로 실패 | Claude 터미널에 로그인·폴더 신뢰·선택 창이 남아 있는지 확인합니다. |
 | ANA 주소가 열리지 않음 | Codespace 실행 상태와 Ports의 8809를 확인합니다. 로컬 PC의 `localhost:8809` 주소가 아닙니다. |
 | 다른 계정에서 접속 불가 | Private 포트는 해당 Codespace 접근 권한이 필요합니다. 본인의 GitHub 계정을 확인합니다. |

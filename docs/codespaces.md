@@ -11,33 +11,32 @@ In this repository, choose **Code → Codespaces → Create codespace**. A 2-cor
 
 GitHub may show a development-port notice. Check that the address belongs to your codespace and select **Continue**.
 
-## Sign in to Claude once
+## Complete Claude setup in ANA — once
 
-1. Open **Terminal → New Terminal** in the browser editor.
-2. Attach to the running Claude terminal:
+1. Under **Ports**, find **ANA / 8809** and click the globe icon (**Open in Browser**). Keep visibility **Private**. The address is `https://<codespace-name>-8809.app.github.dev`.
+2. In ANA chat, choose a terminal theme and your account's login method from the setup card.
+3. Click **Open Claude login**. Complete sign-in and consent on Claude's official page in the new tab.
+4. If Claude displays an authentication code, return to ANA, paste it into the dedicated **Paste login code** field, and click **Complete login**. Never send codes as ordinary chat messages or GitHub issues.
+5. Read the login confirmation and **Security notes**, then click **Continue**. The numbered safety notes are explanatory text, not choices.
+6. Check the workspace path. Choose **Yes, I trust this folder** only if you trust the repository; the initial selection is **No, exit**. If **Try the new fullscreen renderer?** appears, select **Not now**. ANA was tested with the existing terminal renderer.
 
-   ```bash
-   bash .devcontainer/connect.sh
-   ```
+Users complete authentication themselves. Subscription login does not require creating an API key. Organization policies may restrict login methods.
 
-3. Choose a terminal style and your account's login method.
-4. If a browser does not open automatically, open the displayed login URL yourself. If you receive a login code, paste it into **Claude's terminal prompt**, never an issue or chat message.
-5. Complete onboarding and confirm whether you trust the project folder. If **Try the new fullscreen renderer?** appears, choose **Not now**; ANA was tested with the existing terminal renderer.
-6. Press **Ctrl+B**, release both keys, then press **D** to detach. Claude keeps running.
+Normal onboarding does not require terminal commands. Expand **Terminal view & keys** to inspect a prompt. If an unsupported CLI screen blocks setup, open a new terminal in the editor and attach to the running Claude process:
 
-**If the login URL looks truncated:** do not reconstruct it from wrapped lines inside tmux. Detach with **Ctrl+B**, then **D**, and print the complete clipboard URL with `tmux show-buffer`. Open that terminal link, then run `bash .devcontainer/connect.sh` again to paste the login code into Claude.
+```bash
+bash .devcontainer/connect.sh
+```
 
-Users must complete authentication themselves. Subscription login does not require creating an API key. Organization policies may restrict login methods.
+To detach afterwards, press **Ctrl+B**, release both keys, then press **D**. Claude keeps running.
 
-## Open ANA
+## Start chatting
 
-Under **Ports**, find **ANA / 8809** and click the globe icon (**Open in Browser**). Keep port visibility **Private**. Its address is `https://<codespace-name>-8809.app.github.dev`.
-
-Send `Hello` in ANA's chat and check for a response. You can close the setup terminal. Use the ANA address while the codespace is running.
+When setup finishes, the card disappears and the ordinary chat input becomes available. Send `Hello` and check for a response. Use the ANA address while the codespace is running.
 
 ## Return later
 
-Open the **existing** environment from [your codespaces](https://github.com/codespaces), instead of creating another one. ANA and the Claude process start automatically on container start. If Claude requests login or onboarding again, attach using the command above.
+Open the **existing** environment from [your codespaces](https://github.com/codespaces), instead of creating another one. ANA and the Claude process start automatically on container start. If Claude requests login or onboarding again, use the setup card in ANA.
 
 If the codespace is running but ANA is unavailable, run:
 
@@ -60,7 +59,7 @@ Then reopen port 8809.
 | Symptom | What to check |
 |---|---|
 | Recovery mode | Container creation failed. Read the creation log; installation has not completed. |
-| Claude login/onboarding screen | Run `bash .devcontainer/connect.sh` and complete the prompts. |
+| Claude login/onboarding screen | Complete the setup card. If it looks wrong, reload and inspect Terminal view & keys or attach with the command above. |
 | Agent input line is not ready | Check the Claude terminal for login, trust or selection prompts. |
 | ANA URL is unavailable | Check that the codespace is running and port 8809 is forwarded. Your computer's `localhost:8809` is not this server. |
 | Another account cannot open ANA | Private ports require access to the codespace. Check the signed-in GitHub account. |

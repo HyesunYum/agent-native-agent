@@ -644,6 +644,7 @@ body.ws-sorting, body.ws-sorting * { cursor: grabbing !important; user-select: n
 .dlgcard { display: none; margin: 0 14px 8px; padding: 10px 12px; background: var(--blue-weak); border: 1px solid var(--blue); border-radius: var(--r-xs); }
 .dlgcard.on { display: block; max-height: 55dvh; overflow-y: auto; overflow-wrap: anywhere; }
 .dq-login-link { display: inline-block; padding: 10px 14px; border-radius: 10px; background: var(--blue); color: #fff; font-weight: 700; text-decoration: none; }
+.dq-notice { white-space: pre-wrap; font-size: 13px; line-height: 1.5; color: var(--text-sub); }
 .dq-login-help { color: var(--text-sub); font-size: 12px; }
 .dlgcard-h { font-size: 12.5px; font-weight: 800; color: var(--blue-700); margin-bottom: 6px; }
 .dlgcard-body { max-height: 130px; overflow: auto; margin: 0 0 8px; padding: 8px; background: var(--surface); border-radius: 6px; font: 12px/1.45 ui-monospace, Menlo, monospace; color: var(--text); white-space: pre-wrap; word-break: break-word; }
@@ -2709,9 +2710,10 @@ function renderDialog() {
   const chat = d.options.find((o) => o.chat);
   q.innerHTML = `
     ${d.tabs.length > 1 ? `<div class="dq-tabs">${d.tabs.map((t) => `<span class="dq-tab ${t.done ? 'done' : ''}">${t.done ? '✓' : '○'} ${escapeHtml(t.label)}</span>`).join('')}</div>` : ''}
-    ${d.intro && !d.review.length ? `<div class="dq-intro">${escapeHtml(d.intro)}</div>` : ''}
+    ${d.intro && !d.review.length && d.stage !== 'notice' ? `<div class="dq-intro">${escapeHtml(d.intro)}</div>` : ''}
     ${d.review.length ? `<ul class="dq-review">${d.review.map((x) => `<li><b>${escapeHtml(x.q)}</b> → ${escapeHtml(x.a)}</li>`).join('')}</ul>` : ''}
     ${d.title ? `<div class="dq-title">${escapeHtml(d.title)}</div>` : ''}
+    ${d.stage === 'notice' ? `<div class="dq-notice">${escapeHtml(d.intro)}</div>` : ''}
     ${d.stage === 'login' ? `
       ${d.url && /^https:\/\/(claude\.ai|claude\.com)\/(cai\/)?oauth\/authorize\?/.test(d.url) ? `<a class="dq-login-link" href="${escapeHtml(d.url)}" target="_blank" rel="noopener noreferrer">Open Claude login ↗</a>` : '<div class="dq-login-help">Waiting for the complete login link…</div>'}
       ${d.error ? `<div role="alert">${escapeHtml(d.error)}</div>` : ''}
@@ -2724,7 +2726,7 @@ function renderDialog() {
       ${d.multi ? `<button class="primary" data-act="submit" ${dis}>Submit selection</button>` : ''}
       ${d.tabs.length > 1 ? `<button data-act="prev" ${dis} aria-label="Previous question">←</button><button data-act="next" ${dis} aria-label="Next question">→</button>` : ''}
       ${chat ? `<button class="ghost" data-n="${chat.n}" ${dis}>Chat about this</button>` : ''}
-      <span class="sp"></span><button data-act="esc" ${dis}>Esc Cancel</button>
+      <span class="sp"></span>${!d.continue ? `<button data-act="esc" ${dis}>Esc Cancel</button>` : ''}
     </div>`;
   q.hidden = false;
   if (typing !== null) { const inp = q.querySelector('.dq-other input'); if (inp) { inp.value = typing.value; if (!dialogBusy && typing.focused) { inp.focus(); inp.setSelectionRange(typing.start, typing.end); } } }

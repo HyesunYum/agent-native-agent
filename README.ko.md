@@ -86,7 +86,7 @@ PC에 WSL·Node·tmux를 설치하지 않고 브라우저에서 ANA를 실행합
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/tykimos/agent-native-agent?ref=main)
 
-**[브라우저 시작 매뉴얼](docs/codespaces.ko.md)** — 환경 자동 설치 → Claude 로그인 → Ports의 **ANA / 8809** 열기. 포트는 **Private**으로 유지합니다. Codespaces 사용량은 Claude 이용료와 별도로 계산되며, Codespace가 중지되면 ANA도 멈춥니다.
+**[브라우저 시작 매뉴얼](docs/codespaces.ko.md)** — 환경 자동 설치 → Ports의 **ANA / 8809** 열기 → ANA 채팅에서 Claude 초기 설정. 포트는 **Private**으로 유지합니다. Codespaces 사용량은 Claude 이용료와 별도로 계산되며, Codespace가 중지되면 ANA도 멈춥니다.
 
 ## 빠른 시작 — 베이스 실행 (2분)
 
