@@ -8,4 +8,4 @@ export AGENT_CMD="bash .devcontainer/agent.sh"
 bash skills/install/scripts/run.sh start
 curl --fail --silent --retry 10 --retry-connrefused --retry-delay 1 http://127.0.0.1:8809/api/health >/dev/null
 printf '\nOpen Ports → ANA (8809) → Open in Browser. Keep visibility Private.\n'
-printf 'First login: bash .devcontainer/connect.sh\n'
+printf 'Finish Claude setup in ANA chat. Terminal fallback: bash .devcontainer/connect.sh\n'

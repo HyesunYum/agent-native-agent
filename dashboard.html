@@ -642,7 +642,9 @@ body.ws-sorting, body.ws-sorting * { cursor: grabbing !important; user-select: n
 .errbar button { margin-left: auto; font-size: 15px; color: var(--danger); }
 /* 터미널 다이얼로그 안내 카드(권한/확인 창이 열렸을 때) */
 .dlgcard { display: none; margin: 0 14px 8px; padding: 10px 12px; background: var(--blue-weak); border: 1px solid var(--blue); border-radius: var(--r-xs); }
-.dlgcard.on { display: block; }
+.dlgcard.on { display: block; max-height: 55dvh; overflow-y: auto; overflow-wrap: anywhere; }
+.dq-login-link { display: inline-block; padding: 10px 14px; border-radius: 10px; background: var(--blue); color: #fff; font-weight: 700; text-decoration: none; }
+.dq-login-help { color: var(--text-sub); font-size: 12px; }
 .dlgcard-h { font-size: 12.5px; font-weight: 800; color: var(--blue-700); margin-bottom: 6px; }
 .dlgcard-body { max-height: 130px; overflow: auto; margin: 0 0 8px; padding: 8px; background: var(--surface); border-radius: 6px; font: 12px/1.45 ui-monospace, Menlo, monospace; color: var(--text); white-space: pre-wrap; word-break: break-word; }
 .dlgcard-keys { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -2664,10 +2666,11 @@ function renderStatus() {
 }
 // 터미널 다이얼로그(권한 프롬프트·/remote-control 등)가 열리면 채팅에 안내 카드 표시.
 // TUI 다이얼로그는 채팅 말풍선으로 렌더되지 않으므로, 열려 있음을 알리고 내용을 보여준다.
-let dialogShown = false, dialogInfo = null, dialogBusy = false;
+let dialogShown = false, dialogInfo = null, dialogBusy = false, dialogRenderSig = '';
+let dialogRenderStage = '';
 async function updateDialog(open) {
   const card = $('dlgcard');
-  if (!open) { card.classList.remove('on'); dialogShown = false; return; }
+  if (!open) { card.classList.remove('on'); dialogShown = false; dialogRenderSig = ''; $('dlgQ').innerHTML = ''; return; }
   // 구조화에 성공하면 선택지 버튼으로, 아니면(알 수 없는 다이얼로그) 화면 캡처 텍스트 + 키 버튼으로
   renderDialog();
   if (!dialogInfo) {
@@ -2682,11 +2685,17 @@ async function updateDialog(open) {
 // 구조화된 다이얼로그 렌더 — 질문·탭 진행·선택지(단일/다중)·직접 입력·검토 화면
 function renderDialog() {
   const q = $('dlgQ'), d = dialogInfo;
+  const sig = JSON.stringify([d, dialogBusy]);
+  if (sig === dialogRenderSig) return; // Keep focus/caret and unfinished input on health polls.
+  dialogRenderSig = sig;
+  const sameStage = dialogRenderStage === (d?.stage || 'menu');
+  dialogRenderStage = d?.stage || 'menu';
   $('dlgRaw').open = !d;                      // 구조화되면 원시 화면·키는 접어 둔다(필요할 때 펼침)
   if (!d) { q.hidden = true; q.innerHTML = ''; $('dlgcardH').textContent = 'The terminal is showing a dialog that needs your input'; return; }
-  $('dlgcardH').textContent = d.kind === 'question' ? 'Claude is asking you' : 'The terminal needs your choice';
+  $('dlgcardH').textContent = d.kind === 'onboarding' ? 'Set up Claude Code' : d.kind === 'question' ? 'Claude is asking you' : 'The terminal needs your choice';
   // 직접 입력 중이면 값·포커스를 보존한다(폴링 재렌더로 입력이 날아가지 않게)
-  const ae = document.activeElement, typing = ae && q.contains(ae) && ae.tagName === 'INPUT' ? ae.value : null;
+  const ae = document.activeElement, previousInput = q.querySelector('.dq-other input');
+  const typing = sameStage && previousInput ? { value: previousInput.value, start: previousInput.selectionStart, end: previousInput.selectionEnd, focused: ae === previousInput } : null;
   const dis = dialogBusy ? 'disabled' : '';
   const opts = d.options.filter((o) => !o.chat).map((o) => {
     if (o.other) {
@@ -2703,15 +2712,22 @@ function renderDialog() {
     ${d.intro && !d.review.length ? `<div class="dq-intro">${escapeHtml(d.intro)}</div>` : ''}
     ${d.review.length ? `<ul class="dq-review">${d.review.map((x) => `<li><b>${escapeHtml(x.q)}</b> → ${escapeHtml(x.a)}</li>`).join('')}</ul>` : ''}
     ${d.title ? `<div class="dq-title">${escapeHtml(d.title)}</div>` : ''}
+    ${d.stage === 'login' ? `
+      ${d.url && /^https:\/\/(claude\.ai|claude\.com)\/(cai\/)?oauth\/authorize\?/.test(d.url) ? `<a class="dq-login-link" href="${escapeHtml(d.url)}" target="_blank" rel="noopener noreferrer">Open Claude login ↗</a>` : '<div class="dq-login-help">Waiting for the complete login link…</div>'}
+      ${d.error ? `<div role="alert">${escapeHtml(d.error)}</div>` : ''}
+      <form class="dq-other dq-code"><input type="password" aria-label="Claude login code" placeholder="Paste login code" autocomplete="off" spellcheck="false" ${dis}><button type="submit" ${dis}>Complete login</button></form>
+      <div class="dq-login-help">The code is sent to Claude Code and is not saved in ANA chat history.</div>
+    ` : ''}
     <div class="dq-opts">${opts}</div>
     <div class="dq-acts">
+      ${d.continue ? `<button class="primary" data-act="continue" ${dis}>Continue</button>` : ''}
       ${d.multi ? `<button class="primary" data-act="submit" ${dis}>Submit selection</button>` : ''}
       ${d.tabs.length > 1 ? `<button data-act="prev" ${dis} aria-label="Previous question">←</button><button data-act="next" ${dis} aria-label="Next question">→</button>` : ''}
       ${chat ? `<button class="ghost" data-n="${chat.n}" ${dis}>Chat about this</button>` : ''}
       <span class="sp"></span><button data-act="esc" ${dis}>Esc Cancel</button>
     </div>`;
   q.hidden = false;
-  if (typing !== null) { const inp = q.querySelector('.dq-other input'); if (inp) { inp.value = typing; inp.focus(); } }
+  if (typing !== null) { const inp = q.querySelector('.dq-other input'); if (inp) { inp.value = typing.value; if (!dialogBusy && typing.focused) { inp.focus(); inp.setSelectionRange(typing.start, typing.end); } } }
 }
 async function dialogDo(body) {
   if (dialogBusy) return;
@@ -2719,7 +2735,7 @@ async function dialogDo(body) {
   let r, j; try { r = await post('/api/dialog', body); j = await r.json(); } catch { j = { error: 'Could not reach the server' }; }
   dialogBusy = false;
   if (!r || !r.ok) showErr(j.error || 'Dialog action failed');
-  else if ('dialog' in j) dialogInfo = j.dialog;
+  else if ('dialog' in j) { if (body.action === 'code') { const inp = $('dlgQ').querySelector('.dq-code input'); if (inp) inp.value = ''; } dialogInfo = j.dialog; }
   renderDialog(); renderStatus();
 }
 $('dlgQ').addEventListener('click', (e) => {
@@ -2731,6 +2747,7 @@ $('dlgQ').addEventListener('submit', (e) => {
   const f = e.target.closest('.dq-other'); if (!f) return;
   e.preventDefault();
   const text = f.querySelector('input').value.trim(); if (!text) return;
+  if (f.classList.contains('dq-code')) return dialogDo({ action: 'code', code: text });
   dialogDo({ action: 'pick', n: Number(f.dataset.n), text });
 });
 // 화면에서 다이얼로그 본문 추출: 마지막 긴 구분선(▔/─ 연속) 이후의 비어있지 않은 줄들
@@ -3575,6 +3592,7 @@ function reconcile() {
 }
 setInterval(reconcile, 3000); // SSE 이벤트가 없어도 미확인 판정이 굴러가게
 async function send() {
+  if (dialogInfo?.kind === 'onboarding') { showErr('Finish Claude setup using the card above.'); return; }
   const raw = $('input').value.trim();
   const files = attachments.filter((a) => a.path);
   if (attachments.some((a) => a.pending)) { showErr('Waiting for uploads to finish — one moment'); return; }
@@ -3599,7 +3617,10 @@ function stopMode() {
 }
 function updateSendMode() {
   const b = $('send'), stop = stopMode();
-  b.disabled = !sesAlive();
+  const setup = dialogInfo?.kind === 'onboarding';
+  b.disabled = !sesAlive() || setup;
+  $('input').disabled = setup;
+  $('input').placeholder = setup ? 'Complete Claude setup above' : 'Message ANA — Enter to send';
   if (b.classList.contains('stop') !== stop) b.innerHTML = stop ? STOP_GLYPH : SEND_GLYPH;
   b.classList.toggle('stop', stop);
   b.title = stop ? 'Stop the current task' : 'Send';

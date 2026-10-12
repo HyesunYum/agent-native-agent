@@ -16,6 +16,7 @@
 //  TM-T3 /api/keys copy-mode 무성 소실: keys도 ensureNotInCopyMode
 //  T14 injectText: 후행 개행 트림 + Enter 직전 copy-mode 재확인 + 죽은 delete-buffer 정리
 
+
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -157,6 +158,58 @@ function inputBoxReady(screen) {
   return false;
 }
 
+// Claude Code first-run screens. No credentials are persisted by this module.
+const onboardingDialog = (stage, title) => ({ kind: 'onboarding', stage, title, intro: '', tabs: [], options: [], review: [], multi: false, submit: null, footer: '' });
+
+function loginUrl(text) {
+  // Only join adjacent URL characters; never stitch unrelated terminal prose into a URL.
+  const matches = String(text).match(/https:\/\/(?:claude\.ai|claude\.com)\/[^\s<>"']+(?:\n[ \t]*[A-Za-z0-9_%&=+./?~-]+[ \t]*(?=\n|$))*/g) || [];
+  for (const match of matches.reverse()) {
+    const value = match.replace(/\s/g, '');
+    try {
+      const u = new URL(value);
+      if (!['claude.ai', 'claude.com'].includes(u.hostname) || !['/oauth/authorize', '/cai/oauth/authorize'].includes(u.pathname)) continue;
+      if (['client_id', 'redirect_uri', 'state', 'code_challenge'].every(k => u.searchParams.get(k)) && u.searchParams.get('code_challenge_method') === 'S256') return value;
+    } catch {}
+  }
+  return null;
+}
+
+function parseOnboarding(screen) {
+  const text = String(screen || '').replace(/\u00a0/g, ' ');
+  const lines = text.split('\n');
+  if (promptBoxVisible(lines)) return null;
+  const theme = lines.findIndex(l => /^\s*Choose the text style that looks best with your terminal\s*$/.test(l));
+  if (theme >= 0) {
+    const out = onboardingDialog('theme', 'Choose your terminal theme');
+    out.navigation = 'arrows';
+    for (const line of lines.slice(theme + 1)) {
+      const m = line.match(/^\s*([❯›>]?)\s*[✔✓]?\s*((?:Auto \(match terminal\)|(?:Dark|Light) mode(?: \([^\n]+\))?))\s*$/);
+      if (m) out.options.push({ n: out.options.length + 1, label: m[2], desc: '', cur: !!m[1], checked: null });
+    }
+    if (out.options.length && out.options.some(o => o.cur)) return out;
+  }
+  if (/^\s*Paste code here(?: if prompted)?\s*[:>]/m.test(text)) {
+    const out = onboardingDialog('login', 'Log in to Claude');
+    out.url = loginUrl(text);
+    out.intro = 'Open Claude login in a new tab. If Claude gives you a code, paste it here to finish signing in.';
+    out.input = 'code';
+    if (/Invalid|expired|authentication failed|OAuth error/i.test(text)) out.error = 'Claude could not accept that code. Check the code or restart login.';
+    return out;
+  }
+  if (/^\s*(?:[✔✓]\s*)?Login successful[.!]?(?:\s|$)/m.test(text) && /(?:Press )?Enter to continue/i.test(text)) {
+    const out = onboardingDialog('complete', 'Claude login successful'); out.continue = true; return out;
+  }
+  // First-run safety notices have a footer but no numbered choices.
+  const notice = lines.findIndex(l => /^\s*(?:Security notes:?|A few quick notes before we get started:?)\s*$/.test(l));
+  if (notice >= 0 && /(?:Press )?Enter to continue/i.test(text) && !/^\s*[❯›>]?\s*\d+\.\s/m.test(text)) {
+    const out = onboardingDialog('notice', lines[notice].trim());
+    out.intro = lines.slice(notice + 1).filter(l => !/(?:Press )?Enter to continue/i.test(l)).join('\n').trim();
+    out.continue = true; return out;
+  }
+  return null;
+}
+
 // 오버레이 다이얼로그가 열려 있는가(CR3·coding-M8): ▔ 구분선 / Esc to cancel / ❯ 1. 메뉴 / 신뢰 프롬프트
 // 평소 입력 상자(구분선 ─── 사이의 '❯ ' 프롬프트)가 맨 아래에 보이면 다이얼로그가 아니다.
 // 다이얼로그가 뜨면 Claude Code는 입력 상자를 그 화면으로 바꾼다. 응답 본문에 'Select model'·'Esc to cancel' 같은
@@ -180,6 +233,7 @@ function promptBoxVisible(lines) {
 // 오버레이 다이얼로그가 열려 있는가(CR3·coding-M8): 화면 맨 아래 부분에서만, 줄 머리로 판정한다.
 // (예전엔 화면 어디서든 부분 문자열로 찾아서, 응답 본문에 'Select model' 같은 말이 있으면 대화가 막혔다)
 function dialogOpen(screen) {
+  if (parseOnboarding(screen)) return true;
   const lines = screen.split('\n');
   if (promptBoxVisible(lines)) return false;
   const tail = lines.map((l) => l.replace(/ /g, ' ').trim()).filter(Boolean).slice(-20);
@@ -209,6 +263,8 @@ function dialogOpen(screen) {
 const DLG_OPT = /^(\s*)([❯›>]?)\s*(\d{1,2})\.\s+(.*)$/;
 const DLG_FOOT = /Enter (?:to )?(select|confirm|continue)|to navigate|Esc (?:to )?(cancel|(?:go )?back)|ctrl\+g to edit/i;
 function parseDialog(screen) {
+  const onboarding = parseOnboarding(screen);
+  if (onboarding) return onboarding;
   const L = String(screen || '').split('\n').map((l) => l.replace(/ /g, ' ').replace(/\s+$/, ''));
   // 마지막 옵션 묶음을 찾는다(본문에 번호 목록이 있어도 화면 맨 아래 메뉴만 대상)
   let last = -1;
@@ -272,6 +328,10 @@ function parseDialog(screen) {
   if (chatIdx > 0 && !out.options.some((o) => o.other)) out.options[chatIdx - 1].other = true;
   out.title = body.length ? body[body.length - 1] : '';
   out.intro = body.slice(0, -1).join('\n');
+  if (out.title === 'Select login method:') {
+    out.kind = 'onboarding'; out.stage = 'login-method';
+    out.intro = body.filter(t => /^Claude Code can be used/.test(t)).join(' ');
+  }
   if (out.tabs.length || out.review.length || out.options.some((o) => o.other || o.chat)) out.kind = 'question';
   return out;
 }
@@ -377,10 +437,22 @@ function createChannel(opts) {
     return Math.max(max, feed.length) + 1;
   }
   // 화면에 렌더되는 role: 이외(marker/proposal/system 등 서버 생성)는 src 필수(CR2 불변식).
+  // Keep login codes out of persisted messages even if a CLI later echoes one in scrollback.
+  // Patterns live only in this channel's memory and also match terminal line wrapping.
+  const loginSecrets = [];
+  function rememberLoginCode(code) {
+    const escaped = [...code].map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*');
+    loginSecrets.push(new RegExp(escaped, 'g'));
+  }
+  function redactLoginCodes(text) {
+    if (/^\s*Paste code here(?: if prompted)?\s*[:>]/m.test(text)) return '[Claude login screen]';
+    for (const pattern of loginSecrets) text = text.replace(pattern, '[login code redacted]');
+    return text;
+  }
   const SCREEN_ROLES = new Set(['user', 'assistant', 'tool', 'toolresult']);
   function commit(m) {
     if (!SCREEN_ROLES.has(m.role) && !m.src) m.src = 'api'; // CR2: 화면 부재 항목은 강제로 api 출처
-    const entry = { seq: nextSeq(), role: m.role, text: m.text, at: new Date().toISOString() };
+    const entry = { seq: nextSeq(), role: m.role, text: redactLoginCodes(m.text), at: new Date().toISOString() };
     if (m.src) entry.src = m.src;
     if (m.pid) entry.pid = m.pid;
     fs.appendFileSync(FEED_FILE, JSON.stringify(entry) + '\n');
@@ -439,7 +511,7 @@ function createChannel(opts) {
 
   return {
     tmux, delay, hash, paneInMode, ensureNotInCopyMode, hasSession, agentAlive,
-    captureHistory, captureScreen, feed, nextSeq, commit, same, sameOrGrown,
+    captureHistory, captureScreen, feed, nextSeq, commit, rememberLoginCode, redactLoginCodes, same, sameOrGrown,
     screenFeed, matchesRunInFeed, anchorIndex, injectText, getTarget, setTarget,
   };
 }
@@ -645,7 +717,7 @@ function createChannelServer(opts) {
       setDialogInfo(dialog ? parseDialog(screen) : null);   // 선택지 구조 → 채팅에서 버튼으로 렌더
       if (dialog) { stableCount = 0; lastFreshSig = ''; return; }
 
-      const parsed = parseTranscript(stripBottomUI(history), paneWidth);
+      const parsed = parseTranscript(stripBottomUI(history), paneWidth).map(m => ({ ...m, text: ch.redactLoginCodes(m.text) }));
       const anchor = anchorIndex(parsed);
       if (anchor === -1 && screenFeed().length && parsed.length && !matchesRunInFeed(parsed.slice(-1))) {
         anchorLossPolls++;
@@ -789,6 +861,20 @@ function createChannelServer(opts) {
     const action = body.action;
     if (action === 'esc') { await send('Escape'); return { ok: true }; }
     if (!cur) return { status: 409, error: 'No dialog is open in the terminal' };
+    if (action === 'code') {
+      if (cur.stage !== 'login') return { status: 409, error: 'Claude is not waiting for a login code' };
+      const code = typeof body.code === 'string' ? body.code.trim() : '';
+      if (!code || code.length > 4096 || /[\s\x00-\x1f\x7f]/.test(code)) return { status: 400, error: 'Paste the complete login code without spaces or newlines' };
+      r.ch.rememberLoginCode(code);
+      await send('C-u');
+      await send('-l', '--', code);
+      await send('Enter');
+      return { ok: true };
+    }
+    if (action === 'continue') {
+      if (!cur.continue) return { status: 409, error: 'Claude is not waiting for confirmation' };
+      await send('Enter'); return { ok: true };
+    }
     if (action === 'next' || action === 'prev') { await send(action === 'next' ? 'Right' : 'Left'); return { ok: true }; }
     // 커서를 옵션 n(또는 'submit' 행)으로 옮긴다 — 화면 순서(옵션들 → Submit 행 → Chat about this)대로
     // 한 칸씩 움직이며 매번 화면으로 위치를 확인한다(최대 20회).
@@ -947,7 +1033,7 @@ function createChannelServer(opts) {
         if (!csrfOk(req)) return sendJson(res, 403, { error: 'forbidden (origin/content-type)' });
         const body = await jsonBody(req, res); if (!body) return;
         if (!(await hasSession())) return sendJson(res, 409, { error: `tmux target '${r.target}' not found` });
-        const out = await r.enqueue(async () => { try { await ensureNotInCopyMode(); return await dialogAction(r, body); } catch (e) { return { status: 500, error: e.message }; } });
+        const out = await r.enqueue(async () => { try { await ensureNotInCopyMode(); return await dialogAction(r, body); } catch (e) { return { status: 500, error: body.action === 'code' ? 'Could not send the login code to Claude' : e.message }; } });
         if (out.error) return sendJson(res, out.status || 400, { error: out.error });
         await r.ch.delay(250);
         let after = null; try { after = parseDialog(await captureScreen()); } catch {}
@@ -1042,7 +1128,7 @@ function resolveTarget(ROOT, env) {
 
 module.exports = {
   // 순수 함수
-  displayWidth, stripBottomUI, parseTranscript, extractDraft, detectBusy, inputBoxReady, dialogOpen, parseDialog, strip, norm,
+  displayWidth, stripBottomUI, parseTranscript, extractDraft, detectBusy, inputBoxReady, dialogOpen, parseDialog, parseOnboarding, loginUrl, strip, norm,
   writeJsonAtomic, readJsonStrict,
   // 팩토리
   createChannel, createChannelServer, resolveTarget, anaNameOf, defaultSession, isAnaSession,
