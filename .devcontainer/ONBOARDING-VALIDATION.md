@@ -50,7 +50,7 @@ network overhead. Human login time is excluded and has not been measured.
 | Browser navigation → initialized ANA | 3.18 s | One authenticated private-port browser load; includes GitHub port notice |
 | Theme click → account choices | 617 ms | One real Claude transition through ANA browser UI |
 | Account choice → login link | 827 ms | One real Claude transition through ANA browser UI |
-| Security notes Continue → folder trust | 437 ms | One real Claude transition through ANA |
+| Security notes Continue → notice dismissed | 437 ms | Browser action response; the next unnumbered trust screen then exposed the separate parser gap described below |
 | Folder trust selection → ready | 586 ms | One real Claude transition through ANA |
 | Send → first assistant reply rendered | 4,189 ms | One real Claude request; includes network and inference time |
 | Terminal screen change → chat rendering | median 300 ms, max 317 ms | Final batch of ten local tmux fixture transitions with real ANA server, SSE, and Chrome; default 300 ms poll interval. Earlier batches had maxima up to 324 ms |
