@@ -625,13 +625,13 @@ body.ws-sorting, body.ws-sorting * { cursor: grabbing !important; user-select: n
 .stseg button { flex: 0 0 auto; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 13px; border-radius: 999px; font-size: 13px; font-weight: 800;
   color: var(--text-sub); background: var(--surface-2); box-shadow: 0 0 0 1px var(--line-2); }
 .stseg button .n { min-width: 18px; padding: 0 5px; border-radius: 999px; font-size: 11.5px; line-height: 18px; text-align: center; background: var(--surface); color: var(--text-sub); }
-.stseg button.on { color: var(--white); background: var(--text); box-shadow: none; }
-.stseg button.on .n { background: color-mix(in srgb, var(--white) 22%, transparent); color: var(--white); }
+.stseg button.on { color: var(--bg); background: var(--text); box-shadow: none; }   /* 반전색 — 라이트·다크 모두에서 읽히게 */
+.stseg button.on .n { background: color-mix(in srgb, var(--bg) 16%, transparent); color: var(--bg); }
 @media (max-width: 520px) {   /* 휴대폰 폭: 다섯 칸 격자 — 글자 위, 개수 아래 */
   .stseg { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; overflow: visible; }
   .stseg button { flex-direction: column; justify-content: center; gap: 2px; height: 46px; padding: 0 2px; border-radius: 12px; font-size: 11px; letter-spacing: -0.01em; }
   .stseg button .n { min-width: 0; padding: 0; background: none; font-size: 14px; line-height: 16px; color: var(--text); }
-  .stseg button.on .n { background: none; color: var(--white); }
+  .stseg button.on .n { background: none; color: var(--bg); }
 }
 .evo-when { margin-left: auto; font-size: 11.5px; font-weight: 700; color: var(--text-weak); white-space: nowrap; }
 .evo-card.done .evo-t, .evo-card.dismissed .evo-t { color: var(--text-sub); }
@@ -1049,11 +1049,48 @@ body.sys-mode .ws-combo { display: none; }
   .bottomnav button.on svg { color: var(--blue); }
   .bottomnav svg { width: 23px; height: 23px; }
   .bottomnav .tbadge { position: absolute; top: 6px; left: calc(50% + 6px); margin: 0; }
-  .view .wrap { padding-bottom: calc(80px + var(--safe-b)); }
+  .view .wrap { padding-bottom: calc(150px + var(--safe-b)); }   /* 하단 메뉴(58) + 채팅 버튼(74+56) 위로 마지막 항목을 올릴 수 있게 */
   .fab { bottom: calc(74px + var(--safe-b)); }
 }
 /* 관계 흐름 그림 */
 .rel-graph { padding: 12px; overflow-x: auto; }
+/* 관계 분석 */
+.ana-btn { height: 32px; padding: 0 14px; border-radius: 999px; background: var(--blue); color: var(--white); font-size: 13px; font-weight: 800; }
+.ana-btn:disabled { opacity: .5; }
+.ana-card { padding: 14px 16px; margin-bottom: 4px; }
+.ana-card[hidden] { display: none; }
+.ana-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.ana-top b { font-size: 14.5px; } .ana-top .sub { font-size: 12px; color: var(--text-weak); }
+.ana-top .sp { flex: 1; }
+.ana-bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; margin: 10px 0 6px; }
+.ana-bar i { display: block; height: 100%; background: var(--blue); border-radius: 99px; transition: width .4s; }
+.ana-bar.indet i { width: 30% !important; animation: anaslide 1.4s ease-in-out infinite; }
+@keyframes anaslide { 0% { transform: translateX(-100%); } 100% { transform: translateX(340%); } }
+.ana-step { font-size: 13px; color: var(--text-sub); } .ana-warn { margin-top: 6px; font-size: 12.5px; color: var(--warm-fg); }
+.ana-acts { display: flex; gap: 8px; margin-top: 10px; } .ana-acts button { height: 32px; padding: 0 12px; border-radius: 8px; font-size: 13px; font-weight: 700; background: var(--surface-2); box-shadow: 0 0 0 1px var(--line); }
+.ana-sum { margin: 8px 0 10px; font-size: 13.5px; color: var(--text-sub); line-height: 1.55; }
+.ana-seg { display: inline-flex; background: var(--surface-2); border-radius: 999px; padding: 3px; margin: 2px 0 12px; box-shadow: 0 0 0 1px var(--line-2); }
+.ana-seg button { height: 30px; padding: 0 14px; border-radius: 999px; font-size: 13px; font-weight: 800; color: var(--text-sub); }
+.ana-seg button.on { background: var(--text); color: var(--bg); }
+.onto-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px; }
+@media (max-width: 720px) { .onto-cols { grid-template-columns: 1fr; } }
+.onto-cols h4 { margin: 0 0 6px; font-size: 12px; color: var(--text-weak); letter-spacing: .03em; text-transform: uppercase; }
+.onto-cls { list-style: none; margin: 0; padding: 0; } .onto-cls li { padding: 5px 0; font-size: 13.5px; } .onto-cls ul { list-style: none; margin: 2px 0 0 18px; padding: 0; border-left: 1px solid var(--line); padding-left: 10px; }
+.onto-cls .cd { font-size: 12px; color: var(--text-weak); }
+.cdot { display: inline-block; width: 10px; height: 10px; border-radius: 99px; margin-right: 7px; vertical-align: 0; }
+.onto-rel { width: 100%; border-collapse: collapse; font-size: 13px; } .onto-rel td, .onto-rel th { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line-2); vertical-align: top; }
+.onto-rel th { font-size: 11.5px; color: var(--text-weak); font-weight: 800; } .onto-rel code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; font-weight: 700; }
+.kg-wrap { position: relative; } .kg-svg { display: block; width: 100%; height: auto; background: var(--surface-2); border-radius: 12px; touch-action: pan-y; }
+.kg-svg .e { stroke: var(--text-weak); stroke-width: 1.2; opacity: .55; } .kg-svg .e.hl { stroke: var(--blue); opacity: 1; stroke-width: 2; }
+.kg-svg .el { font-size: 9.5px; fill: var(--text-weak); } .kg-svg .n { cursor: pointer; } .kg-svg .n text { font-size: 11px; font-weight: 700; fill: var(--text); paint-order: stroke; stroke: var(--surface-2); stroke-width: 3px; }
+.kg-svg.many .el { opacity: 0; } .kg-svg.many.dim .el.hl { opacity: 1; }   /* 사실이 많으면 선 이름은 고른 개체 것만 */
+.kg-svg.dim .n:not(.hl) { opacity: .25; } .kg-svg.dim .e:not(.hl) { opacity: .1; } .kg-svg.dim .el:not(.hl) { opacity: 0; }
+.kg-legend { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 2px; font-size: 12px; color: var(--text-sub); font-weight: 700; }
+.kg-detail { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 13px; }
+.kg-detail[hidden] { display: none; } .kg-detail ul { margin: 6px 0 0; padding-left: 18px; } .kg-detail .src { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+.ana-picks { display: grid; gap: 8px; margin: 12px 0; } .ana-pick { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-weight: 700; font-size: 14px; }
+.ana-pick .n { margin-left: auto; color: var(--text-weak); font-weight: 600; font-size: 12.5px; } .ana-opt { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-sub); margin: 4px 0 12px; }
+.ana-lead { font-size: 13px; color: var(--text-sub); line-height: 1.55; margin: 4px 0 0; }
 .rel-graph svg { display: block; min-width: 560px; width: 100%; height: auto; }
 .rel-graph .colh { font-size: 11px; font-weight: 800; fill: var(--text-weak); letter-spacing: .02em; }
 .rel-graph .node rect { fill: var(--surface-2); stroke: var(--line); stroke-width: 1; }
@@ -1110,6 +1147,34 @@ body.sys-mode .ws-combo { display: none; }
 .msheet .mrow .mrisk { margin-left: 8px; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 800; color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); vertical-align: 1px; }
 .msheet .mrow.unavail .mt, .msheet .mrow.unavail .md { color: var(--text-weak); }
 .msheet .mnote { margin: 2px 6px 0; font-size: 12px; color: var(--text-weak); }
+/* System files — 탐색기처럼: 한 줄 행(이름 · 크기 · 수정 시각 · 다운로드), 낮은 높이, 긴 이름은 말줄임 */
+.files-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin: 10px 0 8px; font-size: 13.5px; }
+.files-crumbs button { padding: 4px 8px; border-radius: 8px; color: var(--text-sub); font-weight: 700; }
+.files-crumbs button:hover { background: var(--surface-2); color: var(--text); }
+.files-crumbs button:last-child { color: var(--text); }
+.files-crumbs button + button::before { content: "›"; margin-right: 8px; color: var(--text-weak); font-weight: 400; }
+.files-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 10px; }
+.files-tools button { height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-size: 13px; font-weight: 700; }
+.files-tools button:disabled { opacity: .45; }
+.files-tools span { font-size: 12px; color: var(--text-weak); margin-left: 4px; }
+#filesList { background: var(--surface); border-radius: 12px; box-shadow: 0 0 0 1px var(--line-2); overflow: hidden; }
+#filesList:empty { display: none; }
+.file-row { display: grid; grid-template-columns: minmax(0, 1fr) 72px 150px 84px; align-items: center; gap: 10px; min-height: 32px; padding: 0 10px; border-bottom: 1px solid var(--line-2); font-size: 13.5px; }
+.file-row:last-child { border-bottom: none; }
+.file-row:hover { background: var(--surface-2); }
+.file-name { min-width: 0; display: flex; }
+.file-name > span, .file-row .file-name button { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; padding: 6px 0; line-height: 19px; color: var(--text); font-weight: 600; }
+.file-row .file-name button { flex: 1; cursor: pointer; }
+.file-meta { font-size: 12px; color: var(--text-weak); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-meta.size { text-align: right; font-variant-numeric: tabular-nums; }
+.file-row a { justify-self: end; height: 24px; line-height: 22px; padding: 0 9px; border: 1px solid var(--line); border-radius: 7px; font-size: 12px; font-weight: 700; color: var(--text-sub); text-decoration: none; background: var(--surface); }
+.file-row a:hover { color: var(--text); border-color: var(--text-weak); }
+@media (max-width: 560px) {   /* 폰: 이름 · 크기 · 다운로드 (수정 시각은 숨김) */
+  .file-row { grid-template-columns: minmax(0, 1fr) 58px 76px; gap: 8px; padding: 0 8px; }
+  .file-meta.when { display: none; }
+}
+#filesStatus { margin: 8px 2px 0; font-size: 12px; color: var(--text-weak); white-space: pre-wrap; overflow-wrap: anywhere; }
+#filesStatus:empty { display: none; }
 </style>
 <script>
 /* 계절·시간대 테마 — <style> 직후에서 돌려 첫 페인트 전에 속성을 심는다(색 깜빡임 방지).
@@ -1186,6 +1251,7 @@ body.sys-mode .ws-combo { display: none; }
       <button class="tab" data-view="evolve" data-group="collab" role="tab" aria-selected="false">Evolve<span class="tbadge" id="evoBadge">0</span></button>
       <button class="tab" data-view="approvals" data-group="collab" role="tab" aria-selected="false">Approvals<span class="tbadge" id="apprBadge">0</span></button>
       <button class="tab" data-view="requests" data-group="collab" role="tab" aria-selected="false">Requests<span class="tbadge" id="reqBadge">0</span></button>
+      <button class="tab" data-view="files" data-group="sys" role="tab" aria-selected="false">Files</button>
       <button class="tab" data-view="stats" data-group="sys" role="tab" aria-selected="false">Stats</button>
       <button class="tab" data-view="relations" data-group="sys" role="tab" aria-selected="false">Relations</button>
       <button class="tab" data-view="reliability" data-group="sys" role="tab" aria-selected="false">Trustworthiness</button>
@@ -1286,7 +1352,10 @@ body.sys-mode .ws-combo { display: none; }
 
   <!-- 관계: 메모·할일·일정이 어떻게 이어져 있는지(NodeRel) — 흐름 그림 · 끊긴 곳 · 관계 어휘 -->
   <section class="view" id="relationsView" role="tabpanel"><div class="wrap">
-    <div class="sec-head"><h2>Relations</h2><span class="cnt" id="relWs"></span><span class="sp"></span><span class="cnt">NodeRel</span></div>
+    <div class="sec-head"><h2>Relations</h2><span class="cnt" id="relWs"></span><span class="sp"></span><button class="ana-btn" id="anaBtn">Analyze</button></div>
+    <!-- 분석: 에이전트가 메모·할일·일정에서 온톨로지(개념·관계 종류)와 지식그래프(개체·사실)를 뽑는다 -->
+    <div class="card ana-card" id="anaCard" hidden></div>
+    <div class="sec-head" style="margin-top:18px"><h2>Links</h2><span class="sp"></span><span class="cnt">NodeRel</span></div>
     <div class="rel-graph card" id="relGraph"></div>
     <div class="sec-head" style="margin-top:22px"><h2>Where the flow breaks</h2></div>
     <div id="relStats"></div>
@@ -1313,6 +1382,14 @@ body.sys-mode .ws-combo { display: none; }
     <div class="sec-head" id="apprReqHead" hidden><h2>Requests</h2><span class="cnt" id="apprReqCnt"></span></div>
     <div id="apprList"></div>
     <div class="empty" id="apprEmpty"></div>
+  </div></section>
+
+  <section class="view" id="filesView" role="tabpanel"><div class="wrap">
+    <div class="sec-head"><h2>Files</h2><span class="cnt">Browse this ANA’s folder and its subfolders</span></div>
+    <nav class="files-crumbs" id="filesCrumbs" aria-label="Current folder"></nav>
+    <div class="files-tools"><button id="filesUp">Up one level</button><button id="filesRefresh">Refresh</button><button id="filesUpload">Upload files</button>
+    <span>Up to 25 MB per file · Existing files are never overwritten.</span><input id="filesInput" type="file" multiple hidden></div>
+    <div id="filesStatus" role="status" aria-live="polite"></div><div id="filesList"></div>
   </div></section>
 
   <!-- 시스템 › 신뢰성 · 안전 · 보안 — 서버가 실제 상태로 계산한 점검(/api/trust) -->
@@ -1507,6 +1584,15 @@ body.sys-mode .ws-combo { display: none; }
   <div class="fld"><input id="lkQ" placeholder="Search tasks, events and notes" autocomplete="off" aria-label="Search items to link"></div>
   <div class="lk-list" id="lkList" role="listbox" aria-label="Items"></div>
   <div class="modal-acts"><button class="cancel" data-close>Cancel</button></div>
+</div>
+<!-- 모달: 관계 분석 대상 고르기 -->
+<div class="modal" id="anaModal" role="dialog" aria-modal="true" aria-labelledby="anaTitle">
+  <h3 id="anaTitle">Analyze relations</h3>
+  <p class="ana-lead">The agent reads the items you pick and builds an <b>ontology</b> (the kinds of things and relations) and a <b>knowledge graph</b> (the actual things and facts).</p>
+  <div class="ana-picks" id="anaPicks"></div>
+  <label class="ana-opt"><input type="checkbox" id="anaOpen"> Only open tasks and events</label>
+  <div class="fld"><input id="anaFocus" placeholder="Focus (optional) — e.g. people, organizations, places" maxlength="300" aria-label="Analysis focus"></div>
+  <div class="modal-acts"><button class="cancel" data-close>Cancel</button><button class="ok" id="anaStart">Start analysis</button></div>
 </div>
 <!-- 모달: 일정 추가 -->
 <div class="modal" id="eventModal" role="dialog" aria-modal="true" aria-label="Add event">
@@ -2369,6 +2455,156 @@ async function renderStats() {
     || '<div class="empty">No activity yet</div>';
 }
 
+/* ---- 관계 분석: 대상 고르기 → 에이전트가 분석(진행률) → 온톨로지 · 지식그래프를 나눠 보여 준다 ---- */
+let anaJob = null, anaView = 'onto', anaSel = '';
+const ANA_COLORS = ['#3182F6', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899', '#84CC16', '#F97316', '#64748B'];
+async function refreshAnalysis() {
+  try { const d = await getJSON('/api/analysis'); anaJob = d.latest; } catch { return; }
+  renderAnalysis();
+}
+function openAnaModal() {
+  const nTasks = items.length, nEvents = events.length;
+  const picks = [['notes', 'Notes', notes.length], ['tasks', 'Tasks', nTasks], ['events', 'Events', nEvents]];
+  $('anaPicks').innerHTML = picks.map(([k, l, n]) => `<label class="ana-pick"><input type="checkbox" value="${k}" ${n ? 'checked' : 'disabled'}> ${l}<span class="n">${n} item${n === 1 ? '' : 's'}</span></label>`).join('');
+  $('anaFocus').value = ''; $('anaOpen').checked = false;
+  openModal('anaModal');
+}
+$('anaBtn').onclick = () => { if (anaJob && anaJob.status === 'running') { $('anaCard').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; } openAnaModal(); };
+$('anaStart').onclick = async () => {
+  const kinds = [...$('anaPicks').querySelectorAll('input:checked')].map((x) => x.value);
+  if (!kinds.length) { showErr('Pick at least one kind of item'); return; }
+  const b = $('anaStart'); b.disabled = true;
+  let r; try { r = await post('/api/analysis/start', { kinds, openOnly: $('anaOpen').checked, focus: $('anaFocus').value.trim() }); } catch { r = null; }
+  b.disabled = false;
+  const d = r ? await r.json().catch(() => ({})) : {};
+  if (!r || !r.ok) { showErr(d.error || 'Could not start the analysis'); return; }
+  closeModal(); anaJob = d.job; renderAnalysis();
+  const h = location.host, ws = encodeURIComponent(currentWs || ''), id = d.job.id, q = `id=${id}&ws=${ws}`;
+  const text = `[Analyze] Build an ontology and a knowledge graph from ${d.job.itemIds.length} items of this workspace${d.job.focus ? ` — focus: ${d.job.focus}` : ''}.
+1) Read them: curl -s "http://${h}/api/analysis/input?${q}"
+2) Report progress as you go (0–99) with a short step: curl -s -X POST "http://${h}/api/analysis/progress?ws=${ws}" -H 'content-type: application/json' -d '{"id":${id},"progress":30,"step":"Finding entities in notes"}'
+3) Post the result: curl -s -X POST "http://${h}/api/analysis/result?ws=${ws}" -H 'content-type: application/json' --data-binary @result.json
+   result.json = {"id":${id},"summary":"2–3 sentences","ontology":{"classes":[{"id":"Organization","label":"Organization","desc":"…","parent":""}],"relations":[{"id":"client_of","label":"client of","domain":"Organization","range":"Organization","desc":"…"}]},"graph":{"entities":[{"id":"acme","label":"Acme","class":"Organization","sources":["<item id>"]}],"facts":[{"from":"acme","rel":"client_of","to":"us","sources":["<item id>"]}]}}
+The ontology is the schema (kinds of things, kinds of relations, with parents for sub-kinds); the knowledge graph is the actual things and facts found in the items. Every entity.class and fact.rel must use an id from the ontology; cite the item ids each comes from. If you can't finish: curl -s -X POST "http://${h}/api/analysis/fail?ws=${ws}" -H 'content-type: application/json' -d '{"id":${id},"reason":"why"}'`;
+  post('/api/chat', { text, force: true }).then((x) => { if (!x.ok) x.json().then((e) => showErr(e.error || 'Could not send it to the agent')).catch(() => {}); }).catch(() => showErr('Could not send it to the agent'));
+};
+const ago = (iso) => { const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000)); return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${Math.floor(s / 3600)}h ${Math.floor(s % 3600 / 60)}m`; };
+function renderAnalysis() {
+  const c = $('anaCard'), j = anaJob;
+  $('anaBtn').textContent = j && j.status === 'running' ? 'Analyzing…' : j && j.status === 'done' ? 'Analyze again' : 'Analyze';
+  if (!j) { c.hidden = true; return; }
+  c.hidden = false;
+  const head = (title, sub) => `<div class="ana-top"><b>${title}</b><span class="sub">${sub}</span><span class="sp"></span></div>`;
+  const targets = [j.counts.notes && `${j.counts.notes} notes`, j.counts.tasks && `${j.counts.tasks} tasks`, j.counts.events && `${j.counts.events} events`].filter(Boolean).join(' · ');
+  if (j.status === 'running') {
+    const stale = Date.now() - Date.parse(j.updatedAt) > 180000;
+    c.innerHTML = head(`Analyzing #${j.id}`, `${escapeHtml(targets)}${j.focus ? ' · focus: ' + escapeHtml(j.focus) : ''} · ${ago(j.at)}`) +
+      `<div class="ana-bar${j.progress ? '' : ' indet'}"><i style="width:${j.progress}%"></i></div>
+       <div class="ana-step">${j.progress ? `${j.progress}% · ` : ''}${escapeHtml(j.step || 'Working')}</div>
+       ${stale ? '<div class="ana-warn">No update from the agent for over 3 minutes — check the chat.</div>' : ''}
+       <div class="ana-acts"><button id="anaChat">Open chat</button><button id="anaCancel">Cancel</button></div>`;
+    $('anaChat').onclick = () => openChat();
+    $('anaCancel').onclick = async () => { await post('/api/analysis/cancel', { id: j.id }).catch(() => {}); refreshAnalysis(); };
+    return;
+  }
+  if (j.status !== 'done') {
+    c.innerHTML = head(j.status === 'failed' ? `Analysis #${j.id} failed` : `Analysis #${j.id} cancelled`, escapeHtml(targets)) +
+      `${j.status === 'failed' ? `<div class="fail-why">✗ ${escapeHtml(j.step || 'Failed')}</div>` : ''}<div class="ana-acts"><button id="anaRetry">Analyze again</button></div>`;
+    $('anaRetry').onclick = openAnaModal; return;
+  }
+  const o = j.ontology || { classes: [], relations: [] }, g = j.graph || { entities: [], facts: [] };
+  c.innerHTML = head(`Analysis #${j.id}`, `${escapeHtml(fmtWhen(j.doneAt || j.updatedAt))} · ${escapeHtml(targets)} · ${o.classes.length} classes · ${o.relations.length} relations · ${g.entities.length} entities · ${g.facts.length} facts`) +
+    `${j.summary ? `<div class="ana-sum">${escapeHtml(j.summary)}</div>` : ''}
+     <div class="ana-seg" role="tablist"><button role="tab" data-v="onto" class="${anaView === 'onto' ? 'on' : ''}" aria-selected="${anaView === 'onto'}">Ontology</button><button role="tab" data-v="kg" class="${anaView === 'kg' ? 'on' : ''}" aria-selected="${anaView === 'kg'}">Knowledge graph</button></div>
+     <div id="anaBody"></div>`;
+  c.querySelectorAll('.ana-seg button').forEach((b) => b.onclick = () => { anaView = b.dataset.v; renderAnalysis(); });
+  const color = Object.fromEntries(o.classes.map((k, i) => [k.id, ANA_COLORS[i % ANA_COLORS.length]]));
+  if (anaView === 'onto') {
+    const kids = (pid) => o.classes.filter((k) => (k.parent || '') === pid);
+    const tree = (pid) => { const ks = kids(pid); return ks.length ? `<ul class="onto-cls">${ks.map((k) => `<li><span class="cdot" style="background:${color[k.id]}"></span><b>${escapeHtml(k.label)}</b>${k.desc ? ` <span class="cd">— ${escapeHtml(k.desc)}</span>` : ''}${tree(k.id)}</li>`).join('')}</ul>` : ''; };
+    const label = (id) => { const k = o.classes.find((x) => x.id === id); return k ? `<span class="cdot" style="background:${color[k.id]}"></span>${escapeHtml(k.label)}` : escapeHtml(id || 'any'); };
+    $('anaBody').innerHTML = `<div class="onto-cols"><div><h4>Classes · ${o.classes.length}</h4>${tree('') || '<div class="empty">No classes</div>'}</div>
+      <div><h4>Relation types · ${o.relations.length}</h4>${o.relations.length ? `<table class="onto-rel"><thead><tr><th>Relation</th><th>From → To</th><th>Uses</th></tr></thead><tbody>${o.relations.map((r) => `<tr><td><code>${escapeHtml(r.label)}</code>${r.desc ? `<div class="cd">${escapeHtml(r.desc)}</div>` : ''}</td><td>${label(r.domain)} → ${label(r.range)}</td><td>${g.facts.filter((f) => f.rel === r.id).length}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No relation types</div>'}</div></div>`;
+    return;
+  }
+  drawKG(g, o, color);
+}
+// 지식그래프: 간단한 힘 기반 배치(개체 = 원, 클래스 색 / 사실 = 선 + 관계 이름). 누르면 그 개체의 사실과 근거 항목
+function drawKG(g, o, color) {
+  const W = 760, H = Math.max(340, Math.min(620, 240 + g.entities.length * 10)), n = g.entities.length;
+  const pos = g.entities.map((e, i) => ({ id: e.id, x: W / 2 + Math.cos(i * 2.4) * (40 + i * 6), y: H / 2 + Math.sin(i * 2.4) * (40 + i * 6), vx: 0, vy: 0 }));
+  const idx = Object.fromEntries(pos.map((p, i) => [p.id, i]));
+  // Fruchterman–Reingold: 서로 밀어내는 힘(k²/d)과 선으로 끌어당기는 힘(d²/k)의 균형. 온도를 낮추며 수렴
+  const k = Math.sqrt((W * H) / Math.max(1, n)) * 0.75, iters = n > 150 ? 160 : 300;
+  // 같은 두 개체 사이의 사실이 여럿이어도 배치에는 선 하나로 — 당기는 힘이 겹쳐 뭉치지 않게
+  const pairs = [...new Set(g.facts.map((f) => [f.from, f.to].sort().join('\u0000')))].map((x) => x.split('\u0000')).filter(([a, b]) => a !== b && idx[a] !== undefined && idx[b] !== undefined);
+  let temp = W / 8;
+  for (let t = 0; t < iters; t++) {
+    for (const p of pos) { p.vx = 0; p.vy = 0; }
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      const a = pos[i], b = pos[j]; const dx = a.x - b.x, dy = a.y - b.y, d = Math.max(0.5, Math.hypot(dx, dy)), f = (k * k) / d;
+      a.vx += dx / d * f; a.vy += dy / d * f; b.vx -= dx / d * f; b.vy -= dy / d * f;
+    }
+    for (const [fa, fb] of pairs) { const a = pos[idx[fa]], b = pos[idx[fb]];
+      const dx = a.x - b.x, dy = a.y - b.y, d = Math.max(0.5, Math.hypot(dx, dy)), f = (d * d) / k;
+      a.vx -= dx / d * f; a.vy -= dy / d * f; b.vx += dx / d * f; b.vy += dy / d * f; }
+    for (const p of pos) {
+      p.vx += (W / 2 - p.x) * 0.035 * k / 40; p.vy += (H / 2 - p.y) * 0.035 * k / 40;   // 떨어진 덩어리끼리 벽으로 밀려나지 않게 가운데로
+      const d = Math.max(0.5, Math.hypot(p.vx, p.vy)), m = Math.min(d, temp);
+      p.x += p.vx / d * m; p.y += p.vy / d * m;
+    }
+    temp *= 0.985;
+  }
+  // 다 퍼진 뒤 화면 틀에 맞춘다(가로세로 비율 유지, 너무 크게 키우지는 않는다)
+  if (n) {
+    const xs = pos.map((p) => p.x), ys = pos.map((p) => p.y), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const sc = Math.min((W - 140) / Math.max(1, x1 - x0), (H - 90) / Math.max(1, y1 - y0), 1.4);
+    const ox = (W - (x1 - x0) * sc) / 2, oy = (H - (y1 - y0) * sc) / 2 + 8;
+    for (const p of pos) { p.x = ox + (p.x - x0) * sc; p.y = oy + (p.y - y0) * sc; }
+    // 마지막 정리: 너무 가까운 두 점은 이름표가 겹치지 않을 만큼 떼어 놓는다
+    const minD = n > 60 ? 30 : 46;
+    for (let t = 0; t < 80; t++) {
+      let moved = false;
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+        const a = pos[i], b = pos[j]; let dx = b.x - a.x, dy = b.y - a.y; const d = Math.hypot(dx, dy);
+        if (d >= minD) continue;
+        if (d < 0.01) { dx = Math.cos(i + j); dy = Math.sin(i + j); }
+        const push = (minD - d) / 2, ux = dx / (d || 1), uy = dy / (d || 1);
+        a.x -= ux * push; a.y -= uy * push; b.x += ux * push; b.y += uy * push; moved = true;
+      }
+      for (const p of pos) { p.x = Math.max(36, Math.min(W - 36, p.x)); p.y = Math.max(26, Math.min(H - 16, p.y)); }
+      if (!moved) break;
+    }
+  }
+  const relLabel = Object.fromEntries((o.relations || []).map((r) => [r.id, r.label]));
+  const edges = g.facts.map((f, i) => { const a = pos[idx[f.from]], b = pos[idx[f.to]]; if (!a || !b) return '';
+    return `<line class="e" data-i="${i}" data-f="${escapeHtml(f.from)}" data-t="${escapeHtml(f.to)}" x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}"/><text class="el" data-f="${escapeHtml(f.from)}" data-t="${escapeHtml(f.to)}" x="${((a.x + b.x) / 2).toFixed(1)}" y="${((a.y + b.y) / 2 - 3).toFixed(1)}" text-anchor="middle">${escapeHtml(relLabel[f.rel] || f.rel)}</text>`; }).join('');
+  const nodes = g.entities.map((e) => { const p = pos[idx[e.id]]; const r = 6 + Math.min(8, g.facts.filter((f) => f.from === e.id || f.to === e.id).length * 1.5);
+    return `<g class="n" data-id="${escapeHtml(e.id)}" tabindex="0" role="button" aria-label="${escapeHtml(e.label)}"><circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}" fill="${color[e.class] || '#94A3B8'}"/><text x="${p.x.toFixed(1)}" y="${(p.y - r - 4).toFixed(1)}" text-anchor="middle">${escapeHtml(e.label.length > 22 ? e.label.slice(0, 21) + '…' : e.label)}</text></g>`; }).join('');
+  const used = o.classes.filter((k) => g.entities.some((e) => e.class === k.id));
+  $('anaBody').innerHTML = `<div class="kg-legend">${used.map((k) => `<span><span class="cdot" style="background:${color[k.id]}"></span>${escapeHtml(k.label)}</span>`).join('')}</div>
+    <div class="kg-wrap"><svg class="kg-svg${g.facts.length > 30 ? ' many' : ''}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Knowledge graph">${edges}${nodes}</svg></div><div class="kg-detail" id="kgDetail" hidden></div>`;
+  const svg = $('anaBody').querySelector('svg');
+  const pick = (id) => {
+    anaSel = anaSel === id ? '' : id;
+    svg.classList.toggle('dim', !!anaSel); svg.querySelectorAll('.hl').forEach((x) => x.classList.remove('hl'));
+    const det = $('kgDetail'); if (!anaSel) { det.hidden = true; return; }
+    const e = g.entities.find((x) => x.id === anaSel), mine = g.facts.filter((f) => f.from === anaSel || f.to === anaSel);
+    svg.querySelectorAll(`.n[data-id="${CSS.escape(anaSel)}"]`).forEach((x) => x.classList.add('hl'));
+    svg.querySelectorAll('.e, .el').forEach((x) => { if (x.dataset.f === anaSel || x.dataset.t === anaSel) { x.classList.add('hl'); [x.dataset.f, x.dataset.t].forEach((k) => svg.querySelectorAll(`.n[data-id="${CSS.escape(k)}"]`).forEach((y) => y.classList.add('hl'))); } });
+    const lab = (id) => (g.entities.find((x) => x.id === id) || { label: id }).label, cls = (o.classes.find((k) => k.id === e.class) || {}).label || e.class;
+    const srcs = [...new Set([...(e.sources || []), ...mine.flatMap((f) => f.sources || [])])];
+    det.hidden = false;
+    det.innerHTML = `<b>${escapeHtml(e.label)}</b> <span class="cd">· ${escapeHtml(cls || 'Thing')}</span>
+      ${mine.length ? `<ul>${mine.map((f) => `<li>${escapeHtml(lab(f.from))} <code>${escapeHtml(relLabel[f.rel] || f.rel)}</code> ${escapeHtml(lab(f.to))}</li>`).join('')}</ul>` : '<div class="cd">No facts</div>'}
+      ${srcs.length ? `<div class="src">${srcs.map((sid) => { const nd = nodeOf(sid); return nd ? `<span class="rel k-${nd.kind}" role="button" tabindex="0" data-go="${escapeHtml(sid)}"><span class="rk">${nd.kind}</span><span class="rt">${escapeHtml(nd.label)}</span></span>` : ''; }).join('')}</div>` : ''}`;
+    det.querySelectorAll('[data-go]').forEach((x) => x.onclick = () => gotoNode(x.dataset.go));
+  };
+  svg.querySelectorAll('.n').forEach((x) => { x.onclick = () => pick(x.dataset.id); x.onkeydown = (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(x.dataset.id); } }; });
+  if (anaSel && g.entities.some((x) => x.id === anaSel)) { const s0 = anaSel; anaSel = ''; pick(s0); }
+}
+setInterval(() => { if (!document.hidden && anaJob && anaJob.status === 'running' && $('relationsView').classList.contains('on')) renderAnalysis(); }, 1000);   // 경과 시간·멈춤 경고 갱신
+
 /* ---- 관계(Relations) ----
    메모 → 할일 → 일정 → 날짜를 네 칸으로 늘어놓고 NodeRel 관계를 선으로 잇는다. 항목을 누르면 그 항목으로 간다. */
 const REL_INFO = [
@@ -2379,6 +2615,7 @@ const REL_INFO = [
   ['ON', 'Event', 'Day', 'The event happens that day (from its date)', false],
 ];
 async function renderRelations() {
+  refreshAnalysis();
   $('relWs').textContent = (workspaces.find((w) => w.id === currentWs) || {}).name || '';
   let d; try { d = await (await getJSON('/api/stats')); } catch { $('relGraph').innerHTML = '<div class="empty">Failed to load</div>'; return; }
   renderRelStats(d.graph);
@@ -2440,6 +2677,66 @@ function renderRelStats(g) {
     ${gap('Open tasks with no time scheduled', 'Use the calendar button on a task to block time for it', g.gaps.tasksUnscheduled)}`;
 }
 
+/* System › Files: server owns the boundary; paths here are relative only. */
+let filesPath = '', filesRequest = 0, filesUploading = false;
+function fileSize(n) { return n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(1)} MB`; }
+async function loadFiles(next = filesPath) {
+  const request = ++filesRequest;
+  $('filesStatus').textContent = 'Loading folder…';
+  try {
+    const r = await fetch('/api/files?path=' + encodeURIComponent(next), { cache: 'no-store' });
+    const data = await r.json(); if (!r.ok) throw new Error(data.error);
+    if (request !== filesRequest) return;
+    filesPath = data.path;
+    $('filesUp').disabled = !filesPath || filesUploading;
+    const crumbs = [{ name: data.root, path: '' }];
+    const parts = filesPath ? filesPath.split('/') : [];
+    parts.forEach((name, i) => crumbs.push({ name, path: parts.slice(0, i + 1).join('/') }));
+    $('filesCrumbs').replaceChildren();
+    for (const c of crumbs) { const b = document.createElement('button'); b.textContent = c.name; b.disabled = filesUploading; b.onclick = () => loadFiles(c.path); $('filesCrumbs').append(b); }
+    $('filesList').replaceChildren();
+    for (const entry of data.entries) {
+      const relative = [filesPath, entry.name].filter(Boolean).join('/');
+      const row = document.createElement('div'); row.className = 'file-row';
+      const name = document.createElement('div'); name.className = 'file-name';
+      const label = document.createElement(entry.directory ? 'button' : 'span'); label.textContent = (entry.directory ? '📁 ' : '📄 ') + entry.name;
+      if (entry.directory) { label.disabled = filesUploading; label.onclick = () => loadFiles(relative); }
+      name.append(label);
+      const size = document.createElement('div'); size.className = 'file-meta size'; size.textContent = entry.directory ? '—' : fileSize(entry.size);
+      const when = document.createElement('div'); when.className = 'file-meta when'; when.textContent = new Date(entry.modified).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      row.title = entry.name; row.append(name, size, when);
+      if (!entry.directory) { const a = document.createElement('a'); a.textContent = 'Download'; a.href = '/api/files/download?path=' + encodeURIComponent(relative); a.download = entry.name; row.append(a); }
+      else { row.append(document.createElement('span')); }
+      $('filesList').append(row);
+    }
+    $('filesStatus').textContent = data.entries.length ? `${data.entries.length} ${data.entries.length === 1 ? 'item' : 'items'}` : 'This folder is empty.';
+  } catch (e) { if (request === filesRequest) $('filesStatus').textContent = e.message || 'Could not load the folder.'; }
+}
+$('filesUp').onclick = () => loadFiles(filesPath.split('/').slice(0, -1).join('/'));
+$('filesRefresh').onclick = () => loadFiles();
+$('filesUpload').onclick = () => $('filesInput').click();
+$('filesInput').onchange = async () => {
+  const selected = [...$('filesInput').files]; if (!selected.length || filesUploading) return;
+  filesUploading = true; ++filesRequest;
+  const destination = filesPath, errors = []; let uploaded = 0;
+  document.querySelectorAll('#filesView button').forEach(b => b.disabled = true);
+  try {
+    for (const f of selected) {
+      $('filesStatus').textContent = `Uploading: ${f.name}`;
+      try {
+        if (f.size > 25 * 1024 * 1024) throw new Error('The maximum file size is 25 MB.');
+        const r = await fetch('/api/files/upload?path=' + encodeURIComponent(destination), { method:'POST', headers: { 'Content-Type':'application/json' }, body:JSON.stringify({ name:f.name, data:await readAsBase64(f) }) });
+        const result = await r.json(); if (!r.ok) throw new Error(result.error); uploaded++;
+      } catch (e) { errors.push(`${f.name}: ${e.message}`); }
+    }
+  } finally {
+    filesUploading = false; $('filesInput').value = '';
+    document.querySelectorAll('#filesView button').forEach(b => b.disabled = false);
+    await loadFiles(destination);
+    $('filesStatus').textContent = `${uploaded} ${uploaded === 1 ? 'file' : 'files'} uploaded` + (errors.length ? '\n' + errors.join('\n') : '');
+  }
+};
+
 /* ================= 탭 전환 ================= */
 // 영역(Workspace / System)마다 마지막으로 본 탭을 기억한다
 let appMode = 'ws';
@@ -2451,7 +2748,7 @@ function selectTab(b) {
     if (b.dataset.group && b.dataset.group !== appMode) applyArea(b.dataset.group);
     if ($('memoView').classList.contains('on') && b.dataset.view !== 'memo') cleanupEmptyMemos(); // 메모 탭 이탈 시 빈 메모 정리(진화 #3)
     document.querySelectorAll('.topnav .tab').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', String(on)); });
-    ['todo', 'schedule', 'memo', 'evolve', 'approvals', 'requests', 'stats', 'relations', 'reliability', 'safety', 'security', 'update'].forEach((v) => $(v + 'View').classList.toggle('on', b.dataset.view === v));
+    ['todo', 'schedule', 'memo', 'evolve', 'approvals', 'requests', 'stats', 'relations', 'reliability', 'safety', 'security', 'update', 'files'].forEach((v) => $(v + 'View').classList.toggle('on', b.dataset.view === v));
     lastTab[appMode] = b.dataset.view;
     revealTab(b);
     try { localStorage.setItem('ana-area-tabs', JSON.stringify(lastTab)); } catch {}
@@ -2459,6 +2756,7 @@ function selectTab(b) {
     if (b.dataset.view === 'requests' || b.dataset.view === 'approvals') refreshRequests();
     if (['reliability', 'safety', 'security'].includes(b.dataset.view)) refreshTrust();
     if (b.dataset.view === 'update') refreshUpdates();
+    if (b.dataset.view === 'files') loadFiles(filesPath);
     if (b.dataset.view === 'stats') renderStats();
     if (b.dataset.view === 'relations') renderRelations();
 }
@@ -3359,6 +3657,7 @@ function connect() {
       case 'evolve': if ($('evolveView').classList.contains('on')) refreshEvolve(); else refreshEvolve(); break;
       case 'requests': refreshRequests(); break;
       case 'updates': refreshUpdates(); break;
+      case 'analysis': if ($('relationsView').classList.contains('on')) refreshAnalysis(); break;
     }
   };
   stream.onerror = () => {

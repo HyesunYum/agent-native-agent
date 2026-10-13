@@ -24,6 +24,7 @@ const { createAgentLog } = require('./agent-log.js');
 
 function createDashboardApi(core, opts) {
   const { ROOT } = opts;
+  const fileApi = require('./file-browser.js').createFileBrowser(opts.FILES_ROOT || ROOT, core);
   const DATA_FILE = opts.DATA_FILE || path.join(ROOT, 'data', 'state.json');
   const PROPOSALS_FILE = opts.PROPOSALS_FILE || path.join(ROOT, 'data', 'proposals.json');
   const EVOLVE_FILE = opts.EVOLVE_FILE || path.join(ROOT, 'data', 'evolve.json');
@@ -234,6 +235,31 @@ function createDashboardApi(core, opts) {
       present: report.features.filter((f) => f.status === 'present').length, total: report.features.length, found: found.length, added };
     saveUpdates(u);
     return u;
+  }
+
+  // ---- 시스템 › Relations › 분석: 에이전트가 메모·할일·일정에서 온톨로지(개념·관계 종류)와 지식그래프(개체·사실)를 뽑는다 ----
+  // 작업은 워크스페이스마다 analysis.json에 최근 10개. 에이전트는 /api/analysis/input으로 원문을 받고 progress·result로 보고한다.
+  const analysisFileOf = (ws) => path.join(path.dirname(dataFileOf(ws)), 'analysis.json');
+  function loadAnalysis(ws) {
+    const a = readJsonStrict(analysisFileOf(ws), () => ({ next: 1, jobs: [] }));
+    return a && Array.isArray(a.jobs) ? a : { next: 1, jobs: [] };
+  }
+  const saveAnalysis = (ws, a) => { a.version = (a.version || 1) + 1; writeJsonAtomic(analysisFileOf(ws), a); };
+  const ANALYSIS_KINDS = { notes: 'Note', tasks: 'Task', events: 'Event' };
+  const clip = (v, n) => String(v == null ? '' : v).slice(0, n);
+  // 결과 검증·정리 — 크기 상한, id 참조가 맞는 것만 남긴다
+  function cleanAnalysis(body, itemIds) {
+    const o = body.ontology || {}, g = body.graph || {};
+    const classes = (Array.isArray(o.classes) ? o.classes : []).slice(0, 80).map((c) => ({ id: clip(c.id || c.label, 60), label: clip(c.label || c.id, 80), desc: clip(c.desc, 300), parent: c.parent ? clip(c.parent, 60) : '' })).filter((c) => c.id);
+    const cids = new Set(classes.map((c) => c.id));
+    for (const c of classes) if (c.parent && !cids.has(c.parent)) c.parent = '';
+    const relations = (Array.isArray(o.relations) ? o.relations : []).slice(0, 80).map((r) => ({ id: clip(r.id || r.label, 60), label: clip(r.label || r.id, 80), domain: clip(r.domain, 60), range: clip(r.range, 60), desc: clip(r.desc, 300) })).filter((r) => r.id);
+    const entities = (Array.isArray(g.entities) ? g.entities : []).slice(0, 400).map((e) => ({ id: clip(e.id || e.label, 80), label: clip(e.label || e.id, 120), class: clip(e.class, 60),
+      sources: (Array.isArray(e.sources) ? e.sources : []).map(String).filter((x) => itemIds.has(x)).slice(0, 20) })).filter((e) => e.id);
+    const eids = new Set(entities.map((e) => e.id));
+    const facts = (Array.isArray(g.facts) ? g.facts : []).slice(0, 1200).map((f) => ({ from: clip(f.from, 80), rel: clip(f.rel, 60), to: clip(f.to, 80),
+      sources: (Array.isArray(f.sources) ? f.sources : []).map(String).filter((x) => itemIds.has(x)).slice(0, 20) })).filter((f) => eids.has(f.from) && eids.has(f.to) && f.rel);
+    return { ontology: { classes, relations }, graph: { entities, facts }, summary: clip(body.summary, 1000) };
   }
 
   function loadRequests() {
@@ -490,6 +516,7 @@ function createDashboardApi(core, opts) {
   const extraApi = (req, res, url, ctx) => wsStore.run(resolveWs(req, url), () => routes(req, res, url, ctx));
   async function routes(req, res, url, ctx) {
     const p = url.pathname;
+    if (await fileApi(req, res, url)) return true;
     const { commit, broadcast, csrfOk, jsonBody } = ctx;
 
     // ---- 워크스페이스 목록/추가/선택/이름 변경/삭제/순서 변경 ----
@@ -1171,6 +1198,67 @@ function createDashboardApi(core, opts) {
       saveUpdates(u); audit(actor(req), `update.${body.action}`, it.title.slice(0, 80));
       broadcast({ kind: 'updates', version: u.version });
       return sendJson(res, 200, { ok: true, status: it.status, item: it, upstreamDir: UPSTREAM_DIR }), true;
+    }
+
+    // ---- 관계 분석(온톨로지 · 지식그래프) ----
+    if (p.startsWith('/api/analysis')) {
+      const ws = curWs(), a = loadAnalysis(ws);
+      const job = (id) => a.jobs.find((j) => j.id === Number(id));
+      const tell = () => broadcast({ kind: 'analysis', version: a.version });
+      if (p === '/api/analysis' && req.method === 'GET') return sendJson(res, 200, { jobs: a.jobs, latest: a.jobs[a.jobs.length - 1] || null }), true;
+      if (p === '/api/analysis/input' && req.method === 'GET') {
+        const j = job(url.searchParams.get('id')); if (!j) return sendJson(res, 404, { error: 'no such analysis' }), true;
+        const st = loadData(ws), want = new Set(j.itemIds);
+        const items = [
+          ...st.notes.filter((n) => want.has(n.id)).map((n) => ({ id: n.id, kind: 'Note', title: n.title || '', text: clip(n.text, 8000) })),
+          ...st.items.filter((t) => want.has(t.id)).map((t) => ({ id: t.id, kind: 'Task', title: t.title || t.text || '', due: t.due || '', done: !!t.done })),
+          ...st.events.filter((e) => want.has(e.id)).map((e) => ({ id: e.id, kind: 'Event', title: e.title || '', date: e.date || '', time: e.time || '', done: !!e.done })),
+        ];
+        return sendJson(res, 200, { id: j.id, focus: j.focus, items, links: (st.links || []).filter((l) => want.has(l.from) && want.has(l.to)) }), true;
+      }
+      if (req.method !== 'POST') return sendJson(res, 405, { error: 'method not allowed' }), true;
+      if (!csrfOk(req)) return sendJson(res, 403, { error: 'forbidden (origin/content-type)' }), true;
+      const body = await jsonBody(req, res, 4 * 1024 * 1024); if (!body) return true;
+      const now = new Date().toISOString();
+      if (p === '/api/analysis/start') {
+        if (a.jobs.some((j) => j.status === 'running')) return sendJson(res, 409, { error: 'An analysis is already running — wait for it or cancel it' }), true;
+        const kinds = (Array.isArray(body.kinds) ? body.kinds : []).filter((k) => ANALYSIS_KINDS[k]);
+        if (!kinds.length) return sendJson(res, 400, { error: 'Pick at least one of notes, tasks, events' }), true;
+        const st = loadData(ws), openOnly = body.openOnly === true;
+        const ids = [
+          ...(kinds.includes('notes') ? st.notes.map((n) => n.id) : []),
+          ...(kinds.includes('tasks') ? st.items.filter((t) => !openOnly || !t.done).map((t) => t.id) : []),
+          ...(kinds.includes('events') ? st.events.filter((e) => !openOnly || !e.done).map((e) => e.id) : []),
+        ];
+        if (!ids.length) return sendJson(res, 400, { error: 'Nothing to analyze in the chosen items' }), true;
+        const j = { id: a.next++, status: 'running', progress: 0, step: 'Waiting for the agent', kinds, openOnly, focus: clip(body.focus, 300), itemIds: ids,
+          counts: { notes: kinds.includes('notes') ? st.notes.length : 0, tasks: ids.filter((x) => st.items.some((t) => t.id === x)).length, events: ids.filter((x) => st.events.some((e) => e.id === x)).length }, at: now, updatedAt: now };
+        a.jobs.push(j); while (a.jobs.length > 10) a.jobs.shift();
+        saveAnalysis(ws, a); audit(actor(req), 'analysis.start', `#${j.id} ${ids.length} items`); tell();
+        return sendJson(res, 200, { ok: true, job: j }), true;
+      }
+      const j = job(body.id); if (!j) return sendJson(res, 404, { error: 'no such analysis' }), true;
+      if (p === '/api/analysis/progress') {
+        if (j.status !== 'running') return sendJson(res, 409, { error: `analysis is ${j.status}` }), true;
+        const pct = Number(body.progress);
+        if (Number.isFinite(pct)) j.progress = Math.max(j.progress, Math.min(99, Math.round(pct)));   // 완료(100)는 result가 정한다
+        if (body.step) j.step = clip(body.step, 200);
+        j.updatedAt = now; saveAnalysis(ws, a); tell(); return sendJson(res, 200, { ok: true }), true;
+      }
+      if (p === '/api/analysis/result') {
+        if (j.status !== 'running') return sendJson(res, 409, { error: `analysis is ${j.status}` }), true;
+        const r2 = cleanAnalysis(body, new Set(j.itemIds));
+        if (!r2.ontology.classes.length && !r2.graph.entities.length) return sendJson(res, 400, { error: 'result needs ontology.classes or graph.entities' }), true;
+        Object.assign(j, r2, { status: 'done', progress: 100, step: 'Done', updatedAt: now, doneAt: now });
+        saveAnalysis(ws, a); audit(actor(req), 'analysis.done', `#${j.id} ${r2.ontology.classes.length} classes, ${r2.graph.entities.length} entities`); tell();
+        return sendJson(res, 200, { ok: true, classes: r2.ontology.classes.length, relations: r2.ontology.relations.length, entities: r2.graph.entities.length, facts: r2.graph.facts.length }), true;
+      }
+      if (p === '/api/analysis/fail' || p === '/api/analysis/cancel') {
+        if (j.status !== 'running') return sendJson(res, 409, { error: `analysis is ${j.status}` }), true;
+        j.status = p.endsWith('fail') ? 'failed' : 'cancelled'; j.step = j.status === 'failed' ? clip(body.reason || 'Failed', 300) : 'Cancelled'; j.updatedAt = now;
+        saveAnalysis(ws, a); tell(); return sendJson(res, 200, { ok: true }), true;
+      }
+      return sendJson(res, 404, { error: 'unknown analysis route' }), true;
     }
 
     // 진화 제안 조회

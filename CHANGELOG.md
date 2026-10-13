@@ -5,10 +5,13 @@ All notable changes to ANA. Versions follow the Claude Code plugin version in `.
 
 To bring an existing ANA up to date with these changes, use the [`ana-update`](skills/ana-update/SKILL.md) skill. It compares that ANA with this repo feature by feature and ports only what you pick.
 
-## [Unreleased]
+## [0.5.0] — 2026-10-14
 
 ### Added
 
+- **Start in GitHub Codespaces.** Run ANA in the browser with no local install: open the codespace, open **ANA / 8809** in Ports, and finish Claude setup in the ANA chat ([guide](docs/codespaces.md)). The conversation resumes when the codespace restarts.
+- **Claude Code setup in the chat.** First-run screens are rendered as cards: theme choice (seven unnumbered options, chosen with the arrow keys), login method, the OAuth link, and a password-type code field. Login codes go only to the live prompt and are never stored.
+- **System › Files.** Browse this ANA's folder (`ANA_FILES_ROOT` to change it), upload into the current folder (25 MB per file, existing files are never overwritten), and download. Symbolic links and paths outside the folder are refused. The list is a compact explorer: one row per item with name, size, modified time and download (the time is hidden on phones).
 - **Collaborate lists by status.** Evolve, Approvals and Requests each have a filter: **Waiting · In progress · Done · Failed · Cancelled**, with counts. The choice is remembered per tab. Phones show it as a five-column grid.
   - **Failed:** in-progress proposals and requests get a *Failed* button, and the agent can report a failure with a reason (`action: fail`). A data change that can't be applied now stays as **Failed** with the error, instead of silently going back to waiting. *Try again* retries it.
   - Finished and cancelled items are no longer hidden; they list newest first, with the time.
@@ -24,17 +27,27 @@ To bring an existing ANA up to date with these changes, use the [`ana-update`](s
   - `ANA_UPDATE_TARGET` / `ANA_UPSTREAM_URL` change what is compared.
 - On phones the System tab bar scrolls to the selected tab and fades its edge where more tabs are hidden.
 
+- **Relations analysis.** *Analyze* on the Relations tab lets you pick notes, tasks and events (and a focus). The agent then builds an **ontology** (kinds of things and relations) and a **knowledge graph** (the actual things and facts, each citing its source items).
+  - A progress bar shows the agent's steps while it works.
+  - The result has two views: *Ontology* and *Knowledge graph*. Tap an entity for its facts and sources.
+
 ### Changed
 
 - **System › Reliability is now Trustworthiness.** Same checks; the tab and docs use the new name.
 
 ### Fixed
 
+- **Codex dialog options** are parsed and selected correctly in the chat.
+- **Trust prompts:** safety notes are no longer mistaken for unnumbered trust choices.
+- **File uploads failed on a server started before the Files tab existed** (the page was new, the API wasn't). The fix is a server restart; the page is unchanged.
+- **On phones, the chat button covered the last row's Download button.** Views now leave room above the button.
 - **Chat history now follows the selected tmux session when several Claude sessions share one folder.** The chat used to read the newest conversation file in that folder, so every session (for example `<name>-ana-claude-1` and `-2`, or one session per person) showed the same conversation. It now reads the conversation of the Claude process running in that pane, from `~/.claude/sessions/<pid>.json`, then the pane's `@ana_session_id` tag, and only then the newest file. A new session that hasn't been used yet now shows an empty chat instead of another session's conversation (`agent-log.js`).
 
 - **Codex chat showed no replies, no model name and no usage** once its session had been running for more than a week. Codex keeps writing to the log in the folder of the day the session started, but the lookup only searched the last 7 day folders. It now picks the most recently modified log for the folder.
 
 - **The model name in the composer was cut off** ("Opus 5…") in the desktop chat panel and on narrow phones, once the shield and usage rings were added. The pill no longer shrinks. The round controls size to the composer's own width (container queries: 40 → 34 → 31 px), so the desktop panel and phones follow one rule.
+
+- **Selected status filter was unreadable in dark mode** (white text on a light pill). The selected pill now uses the inverse theme colour, so it reads in light and dark.
 
 ## [0.4.2] — 2026-10-06
 
@@ -125,6 +138,7 @@ The base becomes a solo operations board you run with a coding agent. It has thr
 
 See the [commit history](https://github.com/tykimos/agent-native-agent/commits/main) up to `d690eda`: workspaces, Chip mode, the install skill, per-session ledgers, and structured AskUserQuestion cards.
 
+[0.5.0]: https://github.com/tykimos/agent-native-agent/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/tykimos/agent-native-agent/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/tykimos/agent-native-agent/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/tykimos/agent-native-agent/compare/d690eda...v0.4.0

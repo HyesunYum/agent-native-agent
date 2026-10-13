@@ -927,6 +927,30 @@ async function integration() {
       assert.ok(stats.graph.gaps.notesUnused.some((x) => x.id === n), '출처 관계가 없어진 메모는 미처리로 잡힌다');
     });
 
+    await ta('C16 관계 분석: 대상 선택→원문→진행률→결과(참조 검증)·동시 실행 막기·취소', async () => {
+      await post('/api/todo', { title: 'Call Acme about the quote' }); await post('/api/todo', { title: 'Book the Seoul venue' });
+      let r = await post('/api/analysis/start', { kinds: ['nope'] }); assert.equal(r.status, 400);
+      let j = await (await post('/api/analysis/start', { kinds: ['tasks'], focus: 'organizations' })).json();
+      const id = j.job.id; assert.equal(j.job.status, 'running'); assert.ok(j.job.itemIds.length >= 2);
+      r = await post('/api/analysis/start', { kinds: ['tasks'] }); assert.equal(r.status, 409, '한 번에 하나만');
+      const input = await (await fetch(`${api}/api/analysis/input?id=${id}`)).json();
+      assert.ok(input.items.some((x) => x.title === 'Call Acme about the quote'));
+      const src = input.items.find((x) => x.title === 'Call Acme about the quote').id;
+      await post('/api/analysis/progress', { id, progress: 150, step: 'Reading' });
+      let cur = (await (await fetch(`${api}/api/analysis`)).json()).latest; assert.equal(cur.progress, 99, '완료(100)는 결과가 정한다'); assert.equal(cur.step, 'Reading');
+      j = await (await post('/api/analysis/result', { id, summary: 's', ontology: { classes: [{ id: 'Org', label: 'Organization' }, { id: 'Sub', label: 'Sub', parent: 'Missing' }], relations: [{ id: 'client_of', label: 'client of', domain: 'Org', range: 'Org' }] },
+        graph: { entities: [{ id: 'acme', label: 'Acme', class: 'Org', sources: [src, 'not-an-item'] }, { id: 'us', label: 'Us', class: 'Org' }], facts: [{ from: 'acme', rel: 'client_of', to: 'us' }, { from: 'acme', rel: 'client_of', to: 'ghost' }] } })).json();
+      assert.deepEqual([j.classes, j.entities, j.facts], [2, 2, 1], '없는 개체를 가리키는 사실은 버린다');
+      cur = (await (await fetch(`${api}/api/analysis`)).json()).latest;
+      assert.equal(cur.status, 'done'); assert.equal(cur.progress, 100);
+      assert.deepEqual(cur.graph.entities[0].sources, [src], '없는 항목 id는 출처에서 뺀다');
+      assert.equal(cur.ontology.classes[1].parent, '', '없는 부모는 비운다');
+      r = await post('/api/analysis/result', { id, ontology: { classes: [{ id: 'X' }] } }); assert.equal(r.status, 409, '끝난 분석에는 다시 못 쓴다');
+      j = await (await post('/api/analysis/start', { kinds: ['tasks'] })).json();
+      await post('/api/analysis/cancel', { id: j.job.id });
+      assert.equal((await (await fetch(`${api}/api/analysis`)).json()).latest.status, 'cancelled');
+    });
+
     await ta('C15 요청(Requests): 에이전트 등록·중복 방지·kind 검증, 답변→answered, 완료/보류/재개', async () => {
       let r = await post('/api/requests', { requests: [{ kind: 'decision', title: 'Pick one', options: ['A', 'B'] }, { kind: 'access', title: 'Share calendar' }] });
       let j = await r.json(); assert.equal(j.added, 2);

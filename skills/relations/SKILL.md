@@ -29,6 +29,17 @@ state.json stays the **source of truth**, including a `links[]` array. `graph.sq
 | UI | Relation chips on items (`function relChips`, "From note · Scheduled · Refers to" with ✕). Clicking a chip calls `gotoNode(id)` (switches tab, `flash()`es the target). `openLinkModal` / `renderLinkList` handle manual links. Relations tab: `#relationsView`, `renderRelations`, `drawRelGraph` (4 columns, bezier edges colored by type, hover dims unrelated nodes, click navigates), `renderRelStats` (gaps), `#relVocab`. |
 | Seed | `seed.js`: two example flows so the graph isn't empty on first run (`ANA_SEED=0` disables). |
 
+## Analysis: ontology and knowledge graph
+
+**Analyze** (top right of the Relations tab) asks the agent to read the user's own items and extract structure that isn't written down yet.
+
+1. **Pick targets:** in the modal (`#anaModal`), choose notes / tasks / events (with counts), optionally only open ones, and an optional focus such as "people, organizations, places". `POST /api/analysis/start` creates a job with the item ids; one job runs at a time. The page then sends the agent an `[Analyze]` chat instruction with the exact curls, including `?ws=` so the reports reach the same workspace.
+2. **Agent work:** the agent reads `GET /api/analysis/input?id=` and reports `POST /api/analysis/progress {id, progress 0–99, step}`. The card shows a progress bar (indeterminate until the first report), the step, elapsed time, a "no update for 3 min" warning, Open chat, and Cancel.
+3. **Result:** `POST /api/analysis/result {id, summary, ontology:{classes[{id,label,desc,parent}], relations[{id,label,domain,range,desc}]}, graph:{entities[{id,label,class,sources[]}], facts[{from,rel,to,sources[]}]}}`. `cleanAnalysis` caps sizes, drops facts whose ends don't exist, drops sources that aren't items of the job, and clears unknown parents. `POST /api/analysis/fail {id, reason}` and `/cancel` end a job. Jobs live in `analysis.json` next to the workspace state (last 10).
+4. **Display:** two views behind a switch.
+   - **Ontology:** the class tree with a color per class, plus a relation-type table (From → To, uses).
+   - **Knowledge graph:** an SVG force layout (Fruchterman–Reingold on unique pairs, fit to the frame, then a spacing pass so labels don't collide; edge labels are hidden above 30 facts until an entity is selected). Tapping an entity shows its facts and source chips that jump to the item (`gotoNode`).
+
 ## Porting
 
 1. Add the dependency (https URL). Check `node -v` ≥ 24. Copy `graph.js` and adapt the vocabulary to the domain. Write the vocabulary table for the user first and confirm it.

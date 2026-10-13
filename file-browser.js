@@ -1,0 +1,68 @@
+'use strict';
+const fs = require('node:fs');
+const path = require('node:path');
+const { pipeline } = require('node:stream');
+const MAX_UPLOAD = 25 * 1024 * 1024;
+const fail = (status, message) => Object.assign(new Error(message), { status });
+
+function createFileBrowser(root, core) {
+  const base = fs.realpathSync(root);
+  // Reject links at every component, including links that currently point inside.
+  function resolve(relative = '') {
+    if (typeof relative !== 'string' || relative.includes('\\') || relative.includes('\0') || path.isAbsolute(relative)) throw fail(403, 'Access outside the designated folder is not allowed.');
+    const parts = relative ? relative.split('/') : [];
+    if (parts.some(p => !p || p === '.' || p === '..')) throw fail(403, 'Invalid path.');
+    let target = base;
+    for (const part of parts) {
+      target = path.join(target, part);
+      if (fs.lstatSync(target).isSymbolicLink()) throw fail(403, 'Symbolic links cannot be accessed.');
+    }
+    return target;
+  }
+  return async function fileApi(req, res, url) {
+    if (!['/api/files', '/api/files/download', '/api/files/upload'].includes(url.pathname)) return false;
+    const reply = (status, data) => { core.sendJson(res, status, data); return true; };
+    try {
+      res.setHeader('Cache-Control', 'no-store');
+      const relative = url.searchParams.get('path') || '';
+      if (url.pathname === '/api/files' && req.method === 'GET') {
+        const dir = resolve(relative);
+        if (!fs.statSync(dir).isDirectory()) throw fail(400, 'Not a folder.');
+        const entries = fs.readdirSync(dir, { withFileTypes: true }).filter(e => e.isDirectory() || e.isFile()).flatMap(e => {
+          try { const st = fs.lstatSync(path.join(dir, e.name)); return st.isSymbolicLink() ? [] : [{ name: e.name, directory: st.isDirectory(), size: st.size, modified: st.mtime.toISOString() }]; } catch { return []; }
+        }).sort((a,b) => Number(b.directory) - Number(a.directory) || a.name.localeCompare(b.name));
+        return reply(200, { root: path.basename(base), path: relative, entries, maxUpload: MAX_UPLOAD });
+      }
+      if (url.pathname === '/api/files/download' && ['GET', 'HEAD'].includes(req.method)) {
+        const target = resolve(relative);
+        const fd = fs.openSync(target, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK);
+        const st = fs.fstatSync(fd);
+        if (!st.isFile()) { fs.closeSync(fd); throw fail(400, 'Only regular files can be downloaded.'); }
+        res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': st.size, 'X-Content-Type-Options': 'nosniff', 'Content-Disposition': "attachment; filename=\"download\"; filename*=UTF-8''" + encodeURIComponent(path.basename(target)).replace(/['()*]/g, c => '%' + c.charCodeAt(0).toString(16)) });
+        if (req.method === 'HEAD') { fs.closeSync(fd); res.end(); }
+        else pipeline(fs.createReadStream(target, { fd, autoClose: true }), res, () => {});
+        return true;
+      }
+      if (url.pathname === '/api/files/upload' && req.method === 'POST') {
+        if (!core.csrfOk(req)) return reply(403, { error: 'Request not allowed.' });
+        const body = await core.jsonBody(req, res, Math.ceil(MAX_UPLOAD * 4 / 3) + 8192);
+        if (!body) return true;
+        if (typeof body.name !== 'string' || !body.name || body.name === '.' || body.name === '..' || /[\\/\x00-\x1f\x7f]/.test(body.name)) throw fail(400, 'Invalid file name.');
+        if (typeof body.data !== 'string' || (body.data.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(body.data))) throw fail(400, 'Invalid file data.');
+        const data = Buffer.from(body.data, 'base64');
+        if (data.length > MAX_UPLOAD) throw fail(413, 'The maximum file size is 25 MB.');
+        const dir = resolve(relative);
+        if (!fs.statSync(dir).isDirectory()) throw fail(400, 'Not a folder.');
+        const target = path.join(dir, body.name);
+        const fd = fs.openSync(target, 'wx', 0o600);
+        try { fs.writeFileSync(fd, data); } catch (e) { try { fs.unlinkSync(target); } catch {} throw e; } finally { fs.closeSync(fd); }
+        return reply(201, { ok: true, name: body.name, size: data.length });
+      }
+      return reply(405, { error: 'Unsupported request.' });
+    } catch (e) {
+      const status = e.status || ({ ENOENT: 404, EEXIST: 409, EACCES: 403, EPERM: 403, ENOTDIR: 400, ELOOP: 403, ENAMETOOLONG: 400 }[e.code]) || 500;
+      return reply(status, { error: e.status ? e.message : status === 409 ? 'A file with this name already exists. Rename it before uploading.' : status === 404 ? 'File or folder not found.' : 'Could not complete the file operation.' });
+    }
+  };
+}
+module.exports = { createFileBrowser };

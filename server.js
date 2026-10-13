@@ -37,6 +37,7 @@ try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
 
 const apiOpts = {
   ROOT,
+  FILES_ROOT: env.ANA_FILES_ROOT || ROOT,
   DATA_FILE: env.DATA_FILE || path.join(DATA_DIR, 'state.json'),
   PROPOSALS_FILE: env.PROPOSALS_FILE || path.join(DATA_DIR, 'proposals.json'),
   EVOLVE_FILE: env.EVOLVE_FILE || path.join(DATA_DIR, 'evolve.json'),

@@ -360,3 +360,9 @@ If ANA changes how you think about apps, **⭐ star the repo** so others can fin
 [AGPL-3.0](LICENSE) © [tykimos](https://github.com/tykimos) · AI Factory Inc.
 
 Free to use, modify, and self-host. If you run a modified version as a network service, AGPL §13 requires you to publish your source. Building something closed-source or hosted? A **[commercial license](COMMERCIAL.md)** is available.
+
+## File browser
+
+Open **System → Files** to browse, upload and download files within this ANA’s project directory. Breadcrumbs and the parent button navigate folders; uploads go into the current folder. The limit is 25 MB per file, and existing files are never overwritten.
+
+The default root is the directory containing `server.js`. Set `ANA_FILES_ROOT=/absolute/path` to an existing directory when starting the server to use another root. Parent traversal and symbolic links are blocked. This directory is shared across the ANA’s Workspaces. Restart the server and refresh the browser after installing this change.

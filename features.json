@@ -197,6 +197,20 @@
       ]
     },
     {
+      "id": "relations-analysis",
+      "title": "Relations analysis — ontology & knowledge graph",
+      "skill": "relations",
+      "summary": "System › Relations › Analyze: pick notes / tasks / events (and a focus), the agent reads them via /api/analysis/input, reports progress, and posts an ontology (classes with parents, relation types with domain → range) and a knowledge graph (entities with classes, facts with relations, each citing source items). Shown as two views — Ontology and Knowledge graph (force layout, tap an entity for its facts and sources).",
+      "anchors": [
+        "/api/analysis/start",
+        "/api/analysis/result",
+        "function cleanAnalysis",
+        "anaModal",
+        "function renderAnalysis",
+        "function drawKG"
+      ]
+    },
+    {
       "id": "app-areas",
       "title": "Workspace / Collaborate / System areas",
       "skill": "app-shell",
