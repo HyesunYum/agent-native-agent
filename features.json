@@ -59,7 +59,7 @@
       "id": "chat-agent-log",
       "title": "Structured chat log (Claude Code + Codex)",
       "skill": "chat-window",
-      "summary": "Render the chat from the agent's own JSONL log instead of the screen mirror: ~/.claude/projects/<cwd>/*.jsonl for Claude Code, ~/.codex/sessions/**/rollout-*.jsonl for Codex. Real model name in the composer.",
+      "summary": "Render the chat from the agent's own JSONL log instead of the screen mirror: ~/.claude/projects/<cwd>/*.jsonl for Claude Code, ~/.codex/sessions/**/rollout-*.jsonl for Codex. Real model name in the composer. Opens with the latest 40 items and loads earlier ones 40 at a time as you scroll up (scroll position kept).",
       "copy": [
         "agent-log.js"
       ],
@@ -71,7 +71,10 @@
         "function mdHtml",
         "codexModelName",
         "function codexRolloutFiles",
-        "findCodexRollout"
+        "findCodexRollout",
+        "function loadOlder",
+        "pageItems",
+        "logMore"
       ]
     },
     {

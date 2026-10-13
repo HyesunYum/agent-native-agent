@@ -887,6 +887,10 @@ body:not(.chatting) .fab { display: grid; }     /* Chip 모드와 무관하게 �
 .conn .cbtn { flex: 1; width: 100%; justify-content: flex-start; background: var(--surface-2); box-shadow: 0 0 0 1px var(--line); }
 .conn .cbtn .label { flex: 1; text-align: left; }
 .conn .conn-pop { left: 0; right: 0; width: auto; transform: none; }   /* 콤보 폭 그대로 — 화면 밖으로 삐져나가지 않게 */
+.log-more { align-self: center; display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 4px 0; font-size: 12.5px; color: var(--text-weak); font-weight: 600; }
+.log-more button { height: 30px; padding: 0 14px; border-radius: 999px; background: var(--surface-2); box-shadow: 0 0 0 1px var(--line); color: var(--text-sub); font-size: 12.5px; font-weight: 700; }
+.log-more.end { opacity: .7; }
+.lm-spin { width: 13px; height: 13px; border-radius: 99px; border: 2px solid currentColor; border-right-color: transparent; animation: sparkspin .9s linear infinite; }
 /* 기록 모드 항목 */
 .umsg { align-self: flex-end; max-width: 86%; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .umsg .msg.user { max-width: 100%; }
@@ -1628,7 +1632,7 @@ let sessionAlive = false, busy = false, atBottom = true;
 // 선언줄 이전에 읽으면 던지고, 그러면 이후 스크립트 전체가 중단된다(실제로 그런 사고가 있었다).
 let contextChips = [], attachments = [];
 // 대화 기록 모드(Claude Code JSONL) 상태 — pollHealth가 부트스트랩 중에 부르므로 여기서 먼저 선언한다
-let logMode = false, logRev = 0, logSession = '', logTimer = null, logBusy = false, logModel = '', logServerModel = '', logServerEffort = '', logEffort = '', msheetBusy = false, logKind = '', limits = null, trustRisk = 0, permInfo = null, permBusy = false, permPollAt = 0;
+let logMode = false, logRev = 0, logSession = '', logTimer = null, logBusy = false, logModel = '', logServerModel = '', logServerEffort = '', logEffort = '', msheetBusy = false, logKind = '', limits = null, trustRisk = 0, permInfo = null, permBusy = false, permPollAt = 0, logOldest = 0, logHasOlder = false, logLoadingOlder = false;
 const logOpen = new Set();          // 사용자가 펼쳐 둔 도구 묶음(다시 그려도 유지)   // attachments: {name, size, path, pending}
 
 /* ================= 데이터 (할일 + 일정) ================= */
@@ -3361,8 +3365,40 @@ function refreshPropCards() { document.querySelectorAll('[data-prop]').forEach((
 // logMode·logRev 등 상태 변수는 부트스트랩보다 먼저 쓰이므로 스크립트 맨 앞(contextChips 옆)에 선언한다.
 // 원장 메시지: 기록 모드에서는 승인 카드처럼 원장에만 있는 것만 그린다
 const ledgerHtml = (msgs) => (logMode ? msgs.filter((m) => m.role === 'proposal') : msgs).map(msgHtml).join('');
-function logReset() { permInfo = null; permPollAt = 0; try { renderPermBtn(); } catch {} logRev = 0; logSession = ''; logKind = ''; limits = null; renderLimits(); logModel = ''; logServerModel = ''; logServerEffort = ''; if (logMode) { logMode = false; } }
+function logReset() { logOldest = 0; logHasOlder = false; logLoadingOlder = false; permInfo = null; permPollAt = 0; try { renderPermBtn(); } catch {} logRev = 0; logSession = ''; logKind = ''; limits = null; renderLimits(); logModel = ''; logServerModel = ''; logServerEffort = ''; if (logMode) { logMode = false; } }
 function pollLogSoon() { clearTimeout(logTimer); logTimer = setTimeout(pollLog, 250); }
+/* ---- 이전 대화 이어 불러오기 ----
+   세션을 열면 최근 40개만 받고, 위로 스크롤해 꼭대기 근처에 오면 그 앞 40개씩 받는다. 받은 만큼 위에 붙이고
+   보던 위치는 그대로 둔다(스크롤 높이 차이만큼 보정). 화면이 덜 찼으면 찰 때까지 더 받는다. */
+function renderLogMore() {
+  let m = $('logMore');
+  if (!logMode) { if (m) m.remove(); return; }
+  if (!m) { m = document.createElement('div'); m.id = 'logMore'; m.className = 'log-more'; }
+  if ($('msgs').firstChild !== m) $('msgs').prepend(m);
+  m.innerHTML = logLoadingOlder ? '<span class="lm-spin" aria-hidden="true"></span>Loading earlier messages…'
+    : logHasOlder ? '<button type="button" id="logMoreBtn">Load earlier messages</button>' : 'Beginning of the conversation';
+  m.classList.toggle('end', !logHasOlder && !logLoadingOlder);
+  const b = $('logMoreBtn'); if (b) b.onclick = () => loadOlder();
+}
+async function loadOlder() {
+  const target = health && health.target;
+  if (!logMode || !logHasOlder || logLoadingOlder || !target) return;
+  logLoadingOlder = true; renderLogMore();
+  const before = logOldest, session = logSession;
+  let d; try { d = await getJSON(`/api/agentlog?target=${encodeURIComponent(target)}&before=${before}&limit=40`); } catch { d = null; }
+  logLoadingOlder = false;
+  if (!d || !d.available || target !== (health && health.target) || d.session !== session || before !== logOldest) { renderLogMore(); return; }
+  const feed = $('feed'), prevH = feed.scrollHeight, prevTop = feed.scrollTop;
+  const html = d.items.filter((it) => !$('msgs').querySelector(`[data-lid="${CSS.escape(it.id)}"]`)).map(logItemHtml).join('');
+  $('logMore').insertAdjacentHTML('afterend', html);
+  logOldest = d.oldest || 0; logHasOlder = !!d.older;
+  $('msgs').querySelectorAll('details.actgrp[data-lid]').forEach((g) => { g.ontoggle = () => { g.open ? logOpen.add(g.dataset.lid) : logOpen.delete(g.dataset.lid); markClip(); }; });
+  renderLogMore(); markClip();
+  feed.scrollTop = prevTop + (feed.scrollHeight - prevH);       // 보던 자리 유지
+  if (logHasOlder && feed.scrollHeight <= feed.clientHeight + 40) loadOlder();   // 아직 스크롤이 안 생기면 더
+}
+$('feed').addEventListener('scroll', () => { if (logMode && logHasOlder && !logLoadingOlder && $('feed').scrollTop < 320) loadOlder(); }, { passive: true });
+
 async function pollLog() {
   clearTimeout(logTimer);
   const target = health && health.session && health.target;
@@ -3379,6 +3415,7 @@ async function pollLog() {
   const fresh = !logMode || d.session !== logSession || d.reset;
   if (fresh && logSession && (d.session !== logSession || d.reset)) { logRev = 0; logSession = ''; return pollLog(); }
   if (!logMode) { logMode = true; renderResync(); $('msgs').innerHTML = ''; renderPending([]); pollLimits(); }
+  if (fresh) { logOldest = d.oldest || 0; logHasOlder = !!d.older; $('msgs').innerHTML = ''; renderLogMore(); }
   logSession = d.session; logRev = d.rev;
   if (d.kind !== logKind) { logKind = d.kind || ''; pollLimits(); pollPerm(true); }
   // 입력창 하단에 실제 모델명 — 시트에서 바꾼 값은 서버 기록이 바뀔 때까지 유지한다
@@ -3388,7 +3425,9 @@ async function pollLog() {
     const stick = atBottom;
     for (const it of d.items) {
       const html = logItemHtml(it); const old = $('msgs').querySelector(`[data-lid="${CSS.escape(it.id)}"]`);
-      if (old) old.outerHTML = html; else $('msgs').insertAdjacentHTML('beforeend', html);
+      if (old) old.outerHTML = html;
+      else if (Number.isFinite(it.idx) && it.idx < logOldest) continue;   // 아직 안 불러온 이전 대화가 갱신된 것 — 위로 스크롤할 때 받는다(맨 아래에 끼워 넣지 않는다)
+      else $('msgs').insertAdjacentHTML('beforeend', html);
     }
     $('msgs').querySelectorAll('details.actgrp[data-lid]').forEach((g) => { g.ontoggle = () => { g.open ? logOpen.add(g.dataset.lid) : logOpen.delete(g.dataset.lid); markClip(); }; });
     updateEmpty(); markClip(); reconcile();
@@ -3582,7 +3621,7 @@ function dropPendingDup(msgs) {
     if (el.dataset.role === m.role && (normWs(m.text) === normWs(el.textContent) || normWs(m.text).startsWith(normWs(el.textContent)))) el.remove();
   }
 }
-function updateEmpty() { const has = $('msgs').children.length || $('pendingWrap').children.length; $('feedEmpty').style.display = has ? 'none' : 'block';
+function updateEmpty() { const has = [...$('msgs').children].some((c) => c.id !== 'logMore') || $('pendingWrap').children.length;   // 맨 위 '이전 대화' 표시는 메시지가 아니다 $('feedEmpty').style.display = has ? 'none' : 'block';
   $('feedEmpty').innerHTML = sessionAlive ? 'Start a conversation' : 'No agent connected — tap the session name above to choose one'; }
 function pinChat() { if (atBottom) $('feed').scrollTop = $('feed').scrollHeight; }
 // ↓ 버튼: 맨 아래가 아니면 보이고, 그사이 새 메시지가 오면 점이 붙는다

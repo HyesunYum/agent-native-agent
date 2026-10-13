@@ -1005,7 +1005,8 @@ function createDashboardApi(core, opts) {
       const target = String(url.searchParams.get('target') || '');
       if (!/^[\w.:@%+-]{1,100}$/.test(target)) return sendJson(res, 400, { error: 'target required' }), true;
       if (p === '/api/agentlog') {
-        try { return sendJson(res, 200, await agentLog.read(target, Number(url.searchParams.get('since')) || 0)), true; }
+        const before = url.searchParams.has('before') ? Number(url.searchParams.get('before')) : undefined;
+        try { return sendJson(res, 200, await agentLog.read(target, Number(url.searchParams.get('since')) || 0, url.searchParams.get('limit') || 40, before)), true; }
         catch (e) { return sendJson(res, 200, { available: false, error: e.message }), true; }
       }
       const img = await agentLog.image(target, url.searchParams.get('ref'));

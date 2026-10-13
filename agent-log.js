@@ -100,6 +100,14 @@ function findCodexRollout(cwd) {
   for (const { f } of codexRolloutFiles()) if (rolloutCwd(f) === cwd) return f;
   return null;
 }
+// 대화 항목 나누어 주기 — since(rev)면 바뀐 것만, 아니면 before 위치 앞의 limit개(없으면 맨 끝 limit개)
+function pageItems(all, since, limit = 40, before) {
+  limit = Math.max(1, Math.min(200, Number(limit) || 40));
+  if (since > 0) return { items: all.filter((x) => x.rev > since), page: {} };
+  const end = Number.isFinite(before) ? Math.max(0, Math.min(before, all.length)) : all.length;
+  const oldest = Math.max(0, end - limit);
+  return { items: all.slice(oldest, end), page: { oldest, older: oldest > 0, total: all.length } };
+}
 const resultText = (c) => (typeof c === 'string' ? c : Array.isArray(c) ? c.filter((x) => x.type === 'text').map((x) => x.text).join('\n') : '');
 
 function createAgentLog({ socket = '' } = {}) {
@@ -188,7 +196,7 @@ function createAgentLog({ socket = '' } = {}) {
   }
 
   const touch = (st, it) => { it.rev = ++st.rev; };
-  function push(st, it) { st.items.push(it); st.byId.set(it.id, it); touch(st, it); return it; }
+  function push(st, it) { it.idx = st.items.length; st.items.push(it); st.byId.set(it.id, it); touch(st, it); return it; }   // idx = 대화 안 위치(이전 대화 이어 불러오기용)
   const last = (st) => st.items[st.items.length - 1];
   // 이미지는 본문 대신 위치(줄 오프셋·블록 경로)만 기억했다가 요청 때 그 줄만 다시 읽는다
   const imgRef = (off, len, p) => `${off}.${len}.${p.join('-')}`;
@@ -286,12 +294,13 @@ function createAgentLog({ socket = '' } = {}) {
   }
 
   // API: 바뀐 항목만(since=rev). 처음 요청(since=0)은 최근 limit개만 준다 — 긴 세션도 가볍게.
-  async function read(target, since, limit = 250) {
+  // since>0: 바뀐 항목만. before(위치): 그 앞의 limit개(위로 스크롤해 이전 대화). 둘 다 없으면 최근 limit개만 — 긴 세션도 바로 뜬다.
+  async function read(target, since, limit = 40, before) {
     const r = await resolve(target);
     if (!r.file) return { available: false };
     const st = update(r.file, r.kind);
-    const items = since > 0 ? st.items.filter((x) => x.rev > since) : st.items.slice(-limit);
-    return { available: true, kind: st.kind, session: st.session, title: st.title, model: st.model || '', modelName: st.kind === 'codex' ? codexModelName(st.model) : modelName(st.model), effort: st.effort || '', limits: st.limits || null, permTc: st.permTc || null, permRev: st.permRev || 0, cwd: r.cwd, rev: st.rev, reset: since > st.rev, items };
+    const { items, page } = pageItems(st.items, since, limit, before);
+    return { available: true, kind: st.kind, session: st.session, title: st.title, model: st.model || '', modelName: st.kind === 'codex' ? codexModelName(st.model) : modelName(st.model), effort: st.effort || '', limits: st.limits || null, permTc: st.permTc || null, permRev: st.permRev || 0, cwd: r.cwd, rev: st.rev, reset: since > st.rev, ...page, items };
   }
   async function image(target, ref) {
     const r = await resolve(target);
@@ -309,4 +318,4 @@ function createAgentLog({ socket = '' } = {}) {
   return { read, image, resolve };
 }
 
-module.exports = { createAgentLog, toolLabel, cleanUser, modelName, codexModelName, codexLimits, findCodexRollout };
+module.exports = { createAgentLog, toolLabel, cleanUser, modelName, codexModelName, codexLimits, findCodexRollout, pageItems };

@@ -5,6 +5,12 @@ All notable changes to ANA. Versions follow the Claude Code plugin version in `.
 
 To bring an existing ANA up to date with these changes, use the [`ana-update`](skills/ana-update/SKILL.md) skill. It compares that ANA with this repo feature by feature and ports only what you pick.
 
+## [0.5.1] — 2026-10-14
+
+### Changed
+
+- **Long conversations open fast.** Switching to a session loads only the latest 40 messages. Scrolling up loads the earlier ones 40 at a time, and the message you're reading stays in place. The top of the chat says *Loading earlier messages…*, and *Beginning of the conversation* once everything is loaded. Updates to earlier messages that aren't loaded yet are no longer appended at the bottom (`/api/agentlog?before=&limit=`).
+
 ## [0.5.0] — 2026-10-14
 
 ### Added
@@ -138,6 +144,7 @@ The base becomes a solo operations board you run with a coding agent. It has thr
 
 See the [commit history](https://github.com/tykimos/agent-native-agent/commits/main) up to `d690eda`: workspaces, Chip mode, the install skill, per-session ledgers, and structured AskUserQuestion cards.
 
+[0.5.1]: https://github.com/tykimos/agent-native-agent/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/tykimos/agent-native-agent/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/tykimos/agent-native-agent/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/tykimos/agent-native-agent/compare/v0.4.0...v0.4.1

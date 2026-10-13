@@ -5,6 +5,12 @@ ANA의 주요 변경 사항입니다. 버전은 `.claude-plugin/plugin.json`의 
 
 이미 쓰고 있는 ANA에 이 변경을 반영하려면 [`ana-update`](skills/ana-update/SKILL.md) 스킬을 쓰세요. 그 ANA를 이 저장소와 기능 단위로 비교하고, 고른 것만 이식합니다.
 
+## [0.5.1] — 2026-10-14
+
+### 변경
+
+- **긴 대화도 빨리 열립니다.** 세션을 바꾸면 최근 메시지 40개만 먼저 불러옵니다. 위로 스크롤하면 이전 메시지를 40개씩 이어서 불러오고, 보던 메시지는 제자리에 있습니다. 맨 위에는 *Loading earlier messages…*가 보이고, 다 불러오면 *Beginning of the conversation*이 나옵니다. 아직 안 불러온 이전 메시지가 갱신돼도 맨 아래에 끼어들지 않습니다(`/api/agentlog?before=&limit=`).
+
 ## [0.5.0] — 2026-10-14
 
 ### 추가
@@ -138,6 +144,7 @@ base가 코딩 에이전트와 함께 운영하는 1인 업무 보드가 되었�
 
 `d690eda`까지의 [커밋 기록](https://github.com/tykimos/agent-native-agent/commits/main)을 보세요. 워크스페이스, 칩 모드, install 스킬, 세션별 원장, 구조화된 AskUserQuestion 카드가 들어 있습니다.
 
+[0.5.1]: https://github.com/tykimos/agent-native-agent/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/tykimos/agent-native-agent/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/tykimos/agent-native-agent/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/tykimos/agent-native-agent/compare/v0.4.0...v0.4.1

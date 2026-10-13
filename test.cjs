@@ -559,6 +559,17 @@ t('L3 agent-log(Codex): 일주일 넘게 켜 둔 세션도 rollout을 찾는다(
   fs.rmSync(home, { recursive: true, force: true });
 });
 
+t('L4 agent-log: 최근 40개 먼저, before로 그 앞을 빈틈없이, since는 바뀐 것만', () => {
+  const { pageItems } = require('./agent-log.js');
+  const all = Array.from({ length: 95 }, (_, i) => ({ id: 'i' + i, idx: i, rev: i + 1 }));
+  let p = pageItems(all, 0);
+  assert.equal(p.items.length, 40); assert.deepEqual([p.items[0].idx, p.page.oldest, p.page.older, p.page.total], [55, 55, true, 95]);
+  p = pageItems(all, 0, 40, 55); assert.deepEqual([p.items[0].idx, p.items[39].idx, p.page.oldest, p.page.older], [15, 54, 15, true]);
+  p = pageItems(all, 0, 40, 15); assert.deepEqual([p.items.length, p.page.oldest, p.page.older], [15, 0, false]);
+  p = pageItems(all, 90); assert.deepEqual(p.items.map((x) => x.idx), [90, 91, 92, 93, 94]); assert.deepEqual(p.page, {});
+  assert.equal(pageItems(all, 0, 9999).items.length, 95, '상한 200');
+});
+
 t('D3 앵커 정렬은 화면 유래 항목만 사용 (src:api 리치 항목이 앵커를 깨지 않음)', () => {
   srv.feed.length = 0;
   srv.feed.push(
