@@ -394,6 +394,22 @@ t('D9 inputBoxReady / dialogOpen 판정 (CR4)', () => {
   }
   assert.equal(srv.inputBoxReady(['⏺ 응답', '──────', '❯ 1. Yes', '  2. No', '──────'].join('\n')), false, '진짜 메뉴는 여전히 막는다');
   assert.equal(srv.inputBoxReady(['──────', '❯ 3.', '──────'].join('\n')), false, '번호만 있는 메뉴 줄');
+  // 번호 목록 모양 입력('1. 먼저 …')은 상자 밑 마지막 행으로 가른다: 모드 상태줄이면 쓰던 글, 조작 안내면 메뉴
+  const boxed = (line, below) => ['⏺ 응답', '──────', line, '──────', ...below].join('\n');
+  const statusLine = ['  ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents'];
+  for (const d of ['1. 먼저 테스트를 돌리고 커밋해', '2. 두 번째 항목']) {
+    assert.equal(srv.inputBoxReady(boxed(`❯ ${d}`, statusLine)), true, `상태줄이 보이면 입력: ${d}`);
+    assert.equal(srv.extractDraft(boxed(`❯ ${d}`, statusLine)), d);
+    assert.equal(srv.dialogOpen(boxed(`❯ ${d}`, statusLine)), false);
+  }
+  assert.equal(srv.inputBoxReady(boxed('❯ 1. 먼저', ['  ⏸ plan mode on (shift+tab to cycle)'])), true, 'plan 모드 상태줄');
+  assert.equal(srv.inputBoxReady(boxed('❯ 1. 먼저', ['  ? for shortcuts'])), true, '단축키 안내 상태줄');
+  const menuFooter = ['Enter to select · ↑/↓ to navigate · Esc to cancel'];
+  assert.equal(srv.inputBoxReady(boxed('❯ 1. Yes', menuFooter)), false, '조작 안내가 있으면 메뉴');
+  assert.equal(srv.extractDraft(boxed('❯ 1. Yes', menuFooter)), '');
+  assert.equal(srv.dialogOpen(boxed('❯ 1. Yes', menuFooter)), true);
+  assert.equal(srv.inputBoxReady(boxed('❯ 1. Yes', [...statusLine, ...menuFooter])), false, '둘 다 있으면 메뉴 쪽(안전)');
+  assert.equal(srv.inputBoxReady(['⏺ 응답', '──────', '❯ 1. Yes', '  2. No', '──────'].join('\n')), false, '아무것도 없으면 예전처럼 메뉴');
   // 입력 상자 아래에 다이얼로그 푸터가 있으면 여전히 다이얼로그
   assert.equal(srv.dialogOpen(['──────', '❯ ', '──────', 'Enter to confirm · Esc to cancel'].join('\n')), true);
 });

@@ -125,6 +125,21 @@ function parseTranscript(text, width = 200) {
 }
 
 // 하단 입력 박스의 미제출 draft
+// 입력 상자 아래의 '마지막 행'으로 메뉴와 입력을 가른다.
+// 평소 입력 상자 밑에는 모드 상태줄(⏵⏵ auto mode on (shift+tab to cycle) · ⏸ plan mode on · ? for shortcuts)이 있고,
+// 선택 메뉴가 뜨면 Claude Code는 상자를 메뉴로 바꿔 상태줄 대신 조작 안내(Enter to select · Esc to cancel)를 단다.
+// 그래서 '❯ 1. …'이 보여도 아래에 상태줄이 있고 조작 안내가 없으면 사용자가 번호 목록 모양으로 쓰고 있는 글이다.
+const MODE_STATUS_LINE = /^\s*(⏵⏵|⏸)\s|shift\+tab to cycle|\? for shortcuts/;
+const MENU_FOOTER = /Esc (?:to )?(cancel|(?:go )?back)|Enter (?:to )?(select|confirm|continue)|(Tab\/Arrow keys|↑\/↓) to navigate/i;
+function typedBelowBox(lines, bot) {
+  let status = false;
+  for (let i = bot + 1, seen = 0; i < lines.length && seen < 4; i++) {
+    const t = lines[i].replace(/\u00A0/g, ' ').trim(); if (!t) continue; seen++;
+    if (MENU_FOOTER.test(t)) return false;
+    if (MODE_STATUS_LINE.test(t)) status = true;
+  }
+  return status;
+}
 function extractDraft(screen) {
   const lines = screen.split('\n');
   const seps = [];
@@ -137,7 +152,7 @@ function extractDraft(screen) {
   let draft = region[0].trim().replace(/^[❯>] ?/, '');
   for (let i = 1; i < region.length; i++) draft += (draft && region[i].trim() ? ' ' : '') + region[i].trim();
   draft = draft.trim();
-  if (/^Try "/.test(draft) || /^\d+\.(\s|$)/.test(draft)) return '';
+  if (/^Try "/.test(draft) || (/^\d+\.(\s|$)/.test(draft) && !typedBelowBox(lines, b))) return '';   // 번호 모양이어도 상태줄이 보이면 쓰던 글
   // 큐잉/시스템 안내(remote-C1): busy 중 큐에 쌓이면 입력창 영역에 안내가 뜬다 — 실제 draft 아님.
   if (/^Press (up|↑) to edit|queued messages?$|^esc to (clear|interrupt)/i.test(draft)) return '';
   return draft;
@@ -150,9 +165,10 @@ function inputBoxReady(screen) {
   for (let i = 0; i < lines.length; i++) if (SEP_LINE(lines[i])) seps.push(i);
   if (seps.length < 2) return false;
   const top = seps[seps.length - 2], bot = seps[seps.length - 1];
+  const typed = typedBelowBox(lines, bot);
   for (let i = top + 1; i < bot; i++) {
     const t = lines[i].replace(/\u00A0/g, ' ').trim();
-    if (/^[❯›>]\s+\d+\.(\s|$)/.test(t)) return false;   // 다이얼로그 메뉴 — 점 뒤 공백까지 봐야 숫자로 시작하는 입력(0.5.1, 3.14)과 구별된다
+    if (/^[❯›>]\s+\d+\.(\s|$)/.test(t) && !typed) return false;   // 다이얼로그 메뉴 — 점 뒤 공백까지 봐야 숫자로 시작하는 입력(0.5.1, 3.14)과 구별된다
     if (/^[❯›>]/.test(t)) return true;
   }
   return false;
@@ -237,9 +253,11 @@ function promptBoxVisible(lines) {
   if (seps.length < 2) return false;
   const top = seps[seps.length - 2], bot = seps[seps.length - 1];
   let prompt = false;
+  const typed = typedBelowBox(lines, bot);
   for (let i = top + 1; i < bot; i++) {
     const t = lines[i].replace(/ /g, ' ').trim();
-    if (/^[❯›>]\s+(\d+\.(\s|$)|Submit$|Select\s)/.test(t)) return false;   // 메뉴·Submit 행·선택 오버레이
+    if (/^[❯›>]\s+(Submit$|Select\s)/.test(t)) return false;   // Submit 행·선택 오버레이
+    if (/^[❯›>]\s+\d+\.(\s|$)/.test(t)) { if (!typed) return false; prompt = true; continue; }   // 메뉴 — 단, 상태줄이 보이면 번호 모양으로 쓰는 글
     if (/^[❯›>](\s|$)/.test(t)) prompt = true;
   }
   if (!prompt) return false;

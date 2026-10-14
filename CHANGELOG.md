@@ -10,6 +10,7 @@ To bring an existing ANA up to date with these changes, use the [`ana-update`](s
 ### Fixed
 
 - **Sending failed with "Agent input line is not ready … waiting on a dialog"** when the agent's input line held text that starts with a number and a dot, such as `0.5.1 기준으로…` or `3.14 …`. Reported by world-ana. The check took it for a menu item (`❯ 1. Yes`). Menu items now need a space (or the end of the line) after the dot, in all four places in `channel-core.js`. Real menus are still blocked, and the chat's send clears the leftover text and delivers the message. Regression test in D9.
+  - **Numbered-list input** such as `1. run the tests first…` is told apart from a menu by the row under the input box. The normal box has a mode status line (`⏵⏵ auto mode on (shift+tab to cycle)`, `⏸ plan mode on`, `? for shortcuts`). A menu replaces the box and shows a controls hint (`Enter to select · Esc to cancel`) instead. Checked on real Claude Code screens: a typed numbered draft reads as ready, and the `/model` picker still reads as a menu.
 - **Agent-internal notices showed up as your chat bubbles.** Claude Code's `<task-notification>` (a background task finished) now renders as a one-line system note, e.g. *Background task completed: …*, in both the log view and the screen mirror.
 
 ## [0.5.1] — 2026-10-14
