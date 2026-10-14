@@ -5,6 +5,13 @@ All notable changes to ANA. Versions follow the Claude Code plugin version in `.
 
 To bring an existing ANA up to date with these changes, use the [`ana-update`](skills/ana-update/SKILL.md) skill. It compares that ANA with this repo feature by feature and ports only what you pick.
 
+## [Unreleased]
+
+### Fixed
+
+- **Sending failed with "Agent input line is not ready … waiting on a dialog"** when the agent's input line held text that starts with a number and a dot, such as `0.5.1 기준으로…` or `3.14 …`. Reported by world-ana. The check took it for a menu item (`❯ 1. Yes`). Menu items now need a space (or the end of the line) after the dot, in all four places in `channel-core.js`. Real menus are still blocked, and the chat's send clears the leftover text and delivers the message. Regression test in D9.
+- **Agent-internal notices showed up as your chat bubbles.** Claude Code's `<task-notification>` (a background task finished) now renders as a one-line system note, e.g. *Background task completed: …*, in both the log view and the screen mirror.
+
 ## [0.5.1] — 2026-10-14
 
 ### Changed

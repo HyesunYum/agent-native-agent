@@ -385,6 +385,15 @@ t('D9 inputBoxReady / dialogOpen 판정 (CR4)', () => {
   // 회귀: 응답 본문에 'Select model'·'Esc to cancel'·'❯ 1.' 같은 글자가 있어도 입력 상자가 보이면 다이얼로그가 아니다
   const reply = ['⏺ 모델 선택 메뉴(`Select model`)도 잡습니다. 취소는 Esc to cancel', '❯ 1. 사용자가 보낸 목록', '──────', '❯ 진행해', '──────', '  ⏵⏵ bypass permissions on'].join('\n');
   assert.equal(srv.dialogOpen(reply), false);
+  // 회귀(2026-10-14 world-ana 보고): 숫자로 시작하는 입력(0.5.1 …, 3.14 …)을 메뉴 항목 '❯ 1.'로 오인해 '준비 안 됨'으로 막던 문제
+  for (const d of ['0.5.1 기준으로 맞추고 커밋해', '3.14 원주율', '2.0 release notes']) {
+    const typed = ['⏺ 응답', '──────', `❯ ${d}`, '──────', '  status'].join('\n');
+    assert.equal(srv.inputBoxReady(typed), true, d);
+    assert.equal(srv.dialogOpen(typed), false, d);
+    assert.equal(srv.extractDraft(typed), d, '초안으로 잡혀야 "보내지 않은 글" 안내가 나온다');
+  }
+  assert.equal(srv.inputBoxReady(['⏺ 응답', '──────', '❯ 1. Yes', '  2. No', '──────'].join('\n')), false, '진짜 메뉴는 여전히 막는다');
+  assert.equal(srv.inputBoxReady(['──────', '❯ 3.', '──────'].join('\n')), false, '번호만 있는 메뉴 줄');
   // 입력 상자 아래에 다이얼로그 푸터가 있으면 여전히 다이얼로그
   assert.equal(srv.dialogOpen(['──────', '❯ ', '──────', 'Enter to confirm · Esc to cancel'].join('\n')), true);
 });
@@ -505,6 +514,10 @@ t('L1 agent-log: 도구 라벨(설명 우선·파일명) · 사용자 입력 정
   assert.equal(cleanUser('hi<system-reminder>secret</system-reminder> there'), 'hi there');
   assert.equal(cleanUser('<command-name>/clear</command-name><command-args></command-args>'), '/clear');
   assert.equal(cleanUser('<local-command-stdout>x</local-command-stdout>'), '');
+  const { systemNotice } = require('./agent-log.js');
+  assert.equal(systemNotice('<task-notification>\n<task-id>b7</task-id>\n<status>completed</status>\n<summary>Background command "grep -n x" completed (exit code 0)</summary>\n</task-notification>'),
+    'Background task completed: Background command "grep -n x" completed (exit code 0)');
+  assert.equal(systemNotice('안녕'), null);
   const { modelName } = require('./agent-log.js');
   assert.equal(modelName('claude-opus-5-5'), 'Opus 5.5'); assert.equal(modelName('claude-haiku-4-5-20251001'), 'Haiku 4.5'); assert.equal(modelName('claude-sonnet-5'), 'Sonnet 5');
 });

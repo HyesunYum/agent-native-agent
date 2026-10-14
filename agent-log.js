@@ -51,6 +51,15 @@ function cleanUser(t) {
   if (/^\s*<(local-command-stdout|local-command-stderr|bash-stdout|bash-stderr|command-message)>/.test(s)) return '';
   return s.trim();
 }
+// 에이전트 내부 알림(백그라운드 작업 끝남 등)은 사람의 말이 아니다 — 한 줄 시스템 표시로 바꾼다
+// <task-notification><status>completed</status><summary>…</summary>…</task-notification> → 'Background task completed: …'
+function systemNotice(text) {
+  const t = String(text || '');
+  if (!/^\s*<task-notification>/.test(t)) return null;
+  const tag = (n) => ((new RegExp(`<${n}>([\\s\\S]*?)</${n}>`).exec(t) || [])[1] || '').trim();
+  const status = tag('status'), summary = tag('summary').replace(/\s+/g, ' ').slice(0, 200);
+  return `Background task ${status || 'update'}${summary ? ': ' + summary : ''}`;
+}
 // 'claude-opus-5-5' → 'Opus 5.5', 'claude-haiku-4-5-20251001' → 'Haiku 4.5', 'claude-sonnet-5' → 'Sonnet 5'
 function modelName(id) {
   const m = /^claude-([a-z]+)-(\d+(?:-\d+)*?)(?:-\d{8})?$/.exec(String(id || ''));
@@ -207,6 +216,8 @@ function createAgentLog({ socket = '' } = {}) {
       if (b.type === 'text') texts.push(b.text);
       else if (b.type === 'image') images.push(imgRef(off, len, [...pathPrefix, i]));
     });
+    const notice = systemNotice(texts.join('\n'));
+    if (notice) { push(st, { id: j.uuid || `u${off}`, kind: 'event', text: notice }); return; }
     const text = cleanUser(texts.join('\n'));
     if (!text && !images.length) return;
     push(st, { id: j.uuid || `u${off}`, kind: 'user', text, images, at: j.timestamp || (j.attachment && j.attachment.timestamp) || '', queued: !!queued });
@@ -318,4 +329,4 @@ function createAgentLog({ socket = '' } = {}) {
   return { read, image, resolve };
 }
 
-module.exports = { createAgentLog, toolLabel, cleanUser, modelName, codexModelName, codexLimits, findCodexRollout, pageItems };
+module.exports = { createAgentLog, toolLabel, cleanUser, systemNotice, modelName, codexModelName, codexLimits, findCodexRollout, pageItems };

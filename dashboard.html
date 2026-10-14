@@ -3550,6 +3550,12 @@ const msgHtml = (m) => {
   if (m.role === 'proposal' && m.pid) return `<div${seq} data-prop="${m.pid}" style="display:contents">${propCard(m.pid, m.text)}</div>`;
   if (m.role === 'tool') return `<div class="act tool"${seq}>${escapeHtml(m.text)}</div>`;
   if (m.role === 'toolresult') return `<div class="act toolresult"${seq}>${escapeHtml(m.text)}</div>`;
+  // 화면 미러 원장에서도 에이전트 내부 알림은 사용자 말풍선이 아니라 한 줄 시스템 표시로
+  if (m.role === 'user' && /^\s*<task-notification>/.test(m.text)) {
+    const tag = (n) => ((new RegExp(`<${n}>([\\s\\S]*?)</${n}>`).exec(m.text) || [])[1] || '').trim();
+    const sum = tag('summary').replace(/\s+/g, ' ').slice(0, 200);
+    return `<div class="msg system"${seq}>${escapeHtml(`Background task ${tag('status') || 'update'}${sum ? ': ' + sum : ''}`)}</div>`;
+  }
   if (m.role === 'user') {
     const who2 = senderOf(m.text);
     // 보낸 사람이 나 자신이면 배지는 군더더기다 — 남이 보낸 것만 표시한다.

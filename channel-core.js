@@ -92,7 +92,7 @@ function parseTranscript(text, width = 200) {
     if (/^\[[A-Z]{2,4}\]\s|Plugin not found\. Run:/.test(t)) continue; // 플러그인 배너(일반화 — [OMC] 등)
     if (/^Resume this session with:/.test(t)) continue;            // /exit·resume 배너(coding-M4)
     if (/^Tip: /.test(line)) { flush(); continue; }               // 입력 박스 위 팁 배너(v2.x) — 본문은 2칸 들여쓰기라 열0만 해당
-    if (/^[❯>]\s+\d+\./.test(t)) continue;                          // 다이얼로그 메뉴 항목
+    if (/^[❯>]\s+\d+\.(\s|$)/.test(t)) continue;                    // 다이얼로그 메뉴 항목 ('❯ 1. Yes'). '❯ 0.5.1 …' 같은 입력은 아니다
     if (/^[❯>] Try "/.test(t)) continue;                            // placeholder
     if (!t) { if (cur) cur.text += '\n'; lastBlank = true; continue; }
     if (/^[❯>] /.test(line)) { flush(); cur = { role: 'user', text: line.replace(/^[❯>] /, '') }; prevRaw = line; lastBlank = false; continue; }
@@ -137,7 +137,7 @@ function extractDraft(screen) {
   let draft = region[0].trim().replace(/^[❯>] ?/, '');
   for (let i = 1; i < region.length; i++) draft += (draft && region[i].trim() ? ' ' : '') + region[i].trim();
   draft = draft.trim();
-  if (/^Try "/.test(draft) || /^\d+\./.test(draft)) return '';
+  if (/^Try "/.test(draft) || /^\d+\.(\s|$)/.test(draft)) return '';
   // 큐잉/시스템 안내(remote-C1): busy 중 큐에 쌓이면 입력창 영역에 안내가 뜬다 — 실제 draft 아님.
   if (/^Press (up|↑) to edit|queued messages?$|^esc to (clear|interrupt)/i.test(draft)) return '';
   return draft;
@@ -152,7 +152,7 @@ function inputBoxReady(screen) {
   const top = seps[seps.length - 2], bot = seps[seps.length - 1];
   for (let i = top + 1; i < bot; i++) {
     const t = lines[i].replace(/\u00A0/g, ' ').trim();
-    if (/^[❯›>]\s+\d+\./.test(t)) return false;   // 다이얼로그 메뉴
+    if (/^[❯›>]\s+\d+\.(\s|$)/.test(t)) return false;   // 다이얼로그 메뉴 — 점 뒤 공백까지 봐야 숫자로 시작하는 입력(0.5.1, 3.14)과 구별된다
     if (/^[❯›>]/.test(t)) return true;
   }
   return false;
@@ -239,7 +239,7 @@ function promptBoxVisible(lines) {
   let prompt = false;
   for (let i = top + 1; i < bot; i++) {
     const t = lines[i].replace(/ /g, ' ').trim();
-    if (/^[❯›>]\s+(\d+\.|Submit$|Select\s)/.test(t)) return false;   // 메뉴·Submit 행·선택 오버레이
+    if (/^[❯›>]\s+(\d+\.(\s|$)|Submit$|Select\s)/.test(t)) return false;   // 메뉴·Submit 행·선택 오버레이
     if (/^[❯›>](\s|$)/.test(t)) prompt = true;
   }
   if (!prompt) return false;

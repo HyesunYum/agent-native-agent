@@ -5,6 +5,13 @@ ANA의 주요 변경 사항입니다. 버전은 `.claude-plugin/plugin.json`의 
 
 이미 쓰고 있는 ANA에 이 변경을 반영하려면 [`ana-update`](skills/ana-update/SKILL.md) 스킬을 쓰세요. 그 ANA를 이 저장소와 기능 단위로 비교하고, 고른 것만 이식합니다.
 
+## [미출시]
+
+### 수정
+
+- **"Agent input line is not ready … waiting on a dialog"로 전송이 실패하던 문제.** 에이전트 입력줄에 `0.5.1 기준으로…`, `3.14 …`처럼 숫자와 점으로 시작하는 글이 남아 있으면 생겼습니다(world-ana 보고). 판정이 이를 메뉴 항목(`❯ 1. Yes`)으로 오인했습니다. 이제 점 뒤에 공백(또는 줄 끝)이 있어야 메뉴로 봅니다. `channel-core.js`의 네 곳을 모두 고쳤습니다. 진짜 메뉴는 여전히 막고, 채팅 전송은 남은 글을 지운 뒤 메시지를 보냅니다. 회귀 테스트는 D9에 있습니다.
+- **에이전트 내부 알림이 내 말풍선으로 보이던 문제.** Claude Code의 `<task-notification>`(백그라운드 작업 끝남)을 *Background task completed: …* 같은 한 줄 시스템 표시로 보여 줍니다. 기록 보기와 화면 미러 모두에 적용됩니다.
+
 ## [0.5.1] — 2026-10-14
 
 ### 변경
