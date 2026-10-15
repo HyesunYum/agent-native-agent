@@ -10,6 +10,10 @@
 //   Task ─SCHEDULED_AS─▶ Event           할일을 실제로 할 시간을 잡은 일정  (명시)
 //   Note|Task|Event ─REFERS_TO─▶ Note|Task|Event   수동 참조              (명시)
 //   Task ─DUE_ON─▶ Day,  Event ─ON─▶ Day           due/date 필드에서 파생 (자동)
+//
+// 지식그래프(Relations › Analyze의 최신 완료 결과)도 같은 스코프에 얹는다 — 개체는 id `kg:<개체 id>`, kind는 온톨로지 클래스,
+// 사실은 온톨로지 관계 id를 타입으로, 근거는 개체 ─MENTIONED_IN─▶ Note|Task|Event. 그래서 메모 하나에서 출발해
+// 그 안의 개체와 개체 사이의 사실까지 /api/graph/trace 한 번으로 따라갈 수 있다. 원천은 analysis.json이다.
 
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -41,6 +45,12 @@ const MEANINGS = {
   DUE_ON: 'The task is due on this day (derived from Task.due)',
   ON: 'The event happens on this day (derived from Event.date)',
 };
+const BASE_KINDS = new Set(['Note', 'Task', 'Event', 'Day']);
+const BASE_TYPES = new Set(Object.keys(MEANINGS));
+const KG_PREFIX = 'kg:';
+const kgKind = (c) => (!c ? 'Entity' : BASE_KINDS.has(c) ? `${c}Entity` : c);          // 기본 kind와 겹치지 않게
+const kgType = (r) => (BASE_TYPES.has(r) || r === 'MENTIONED_IN' ? `kg_${r}` : r);
+const KG_MENTIONED = 'The knowledge-graph entity was found in this note, task or event (derived from the latest analysis)';
 const TITLES = { Note: 'Note title (or its first line)', Task: 'Task title', Event: 'Event title', Day: 'Date YYYY-MM-DD' };
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const dayId = (d) => `day:${d}`;
@@ -54,7 +64,7 @@ function kindOf(s, id) {
 const noteTitle = (n) => (n.title || '').trim() || (n.text || '').trim().split('\n')[0].slice(0, 60) || 'Untitled';
 
 // state → NodeRel 스냅숏. 같은 state는 항상 같은 스냅숏(=같은 서명)이 되도록 순서를 원본 배열 순서로 고정한다.
-function snapshot(s, scope) {
+function snapshot(s, scope, kg) {
   const nodes = [], edges = [], days = new Set(), seen = new Set(), ids = new Set();
   const node = (n) => { if (!ids.has(n.id)) { ids.add(n.id); nodes.push(n); } };   // 중복 id는 첫 항목만(rebuild가 던지지 않게)
   const edge = (from, to, type, properties) => {
@@ -73,11 +83,18 @@ function snapshot(s, scope) {
   for (const n of s.notes) node({ id: n.id, kind: 'Note', scope, no: '', title: noteTitle(n), status: '', updated_at: n.updatedAt || '' });
   for (const d of [...days].sort()) node({ id: dayId(d), kind: 'Day', scope, no: d, title: d, status: '', updated_at: '' });
   for (const l of s.links || []) if (EXPLICIT.includes(l.type)) edge(l.from, l.to, l.type, l.at ? { at: l.at } : {});
+  if (kg && kg.graph) {
+    const g = kg.graph;
+    for (const e of g.entities || []) node({ id: KG_PREFIX + e.id, kind: kgKind(e.class), scope, no: `analysis #${kg.job}`, title: String(e.label || e.id), status: '', updated_at: '' });
+    for (const e of g.entities || []) for (const src of e.sources || []) if (ids.has(src)) edge(KG_PREFIX + e.id, src, 'MENTIONED_IN');
+    for (const f of g.facts || []) edge(KG_PREFIX + f.from, KG_PREFIX + f.to, kgType(f.rel), f.sources && f.sources.length ? { sources: f.sources } : {});
+  }
   return [{ nodes, edges }];
 }
 const signature = (snaps) => crypto.createHash('sha256').update(JSON.stringify(snaps)).digest('hex');
 
-function createGraph({ loadData, dataFileOf }) {
+function createGraph({ loadData, dataFileOf, loadKg }) {
+  const kgOf = (ws) => { try { return loadKg ? loadKg(ws) : null; } catch { return null; } };
   const open = new Map();   // ws → NodeRel (SQLite 핸들은 워크스페이스마다 하나)
   const fileOf = (ws) => path.join(path.dirname(dataFileOf(ws)), 'graph.sqlite');
   function handle(ws) {
@@ -87,7 +104,7 @@ function createGraph({ loadData, dataFileOf }) {
   // 원천과 서명이 다르면 다시 만든다. 반환: 최신 NodeRel 핸들.
   function ensure(ws, s) {
     const g = handle(ws);
-    const snaps = snapshot(s || loadData(ws), ws);
+    const snaps = snapshot(s || loadData(ws), ws, kgOf(ws));
     const cur = g.db.prepare("SELECT value FROM sync_meta WHERE key='signature'").get();
     if (!cur || cur.value !== signature(snaps)) g.rebuild(snaps);
     return g;
@@ -99,7 +116,7 @@ function createGraph({ loadData, dataFileOf }) {
   function view(ws, s) {
     const g = ensure(ws, s);
     const { links } = g.graph(ws);
-    return { links: links.map((l) => ({ from: l.from_id, to: l.to_id, type: l.type })) };
+    return { links: links.filter((l) => BASE_TYPES.has(l.type)).map((l) => ({ from: l.from_id, to: l.to_id, type: l.type })) };
   }
   function nodeRows(g, ws) {
     const m = new Map();
@@ -126,8 +143,10 @@ function createGraph({ loadData, dataFileOf }) {
     const g = ensure(ws), rows = nodeRows(g, ws);
     const st = g.stats(ws);
     const openOnly = (list) => list.filter((x) => (rows.get(x.id) || {}).status === 'open');
+    const kgKinds = st.kinds.filter((k) => !BASE_KINDS.has(k.kind)), kgTypes = st.types.filter((t) => !BASE_TYPES.has(t.type));
     return {
-      kinds: st.kinds, types: st.types,
+      kinds: st.kinds.filter((k) => BASE_KINDS.has(k.kind)), types: st.types.filter((t) => BASE_TYPES.has(t.type)),
+      kg: { entities: kgKinds.reduce((n, k) => n + k.count, 0), facts: kgTypes.filter((t) => t.type !== 'MENTIONED_IN').reduce((n, t) => n + t.count, 0) },
       gaps: {
         notesUnused: g.orphans({ scope: ws, kind: 'Note', type: 'SPAWNED', side: 'out' }),
         tasksNoDue: openOnly(g.orphans({ scope: ws, kind: 'Task', type: 'DUE_ON', side: 'out' })),
@@ -139,13 +158,21 @@ function createGraph({ loadData, dataFileOf }) {
   function describe(ws) {
     ensure(ws);
     const d = describeNodeRel(fileOf(ws));
-    d.provenance.businessMeanings = 'Supplied by the ANA base for its Notes/Tasks/Calendar graph.';
+    d.provenance.businessMeanings = 'Supplied by the ANA base for its Notes/Tasks/Calendar graph; knowledge-graph kinds and relations come from the latest Relations analysis ontology.';
+    const kg = kgOf(ws), o = (kg && kg.ontology) || { classes: [], relations: [] };
+    const clsDesc = new Map(o.classes.map((c) => [kgKind(c.id), c.desc || c.label])), relDesc = new Map(o.relations.map((r) => [kgType(r.id), r]));
     d.scopes = d.scopes.filter((x) => x.scope === ws).map((sc) => ({
       ...sc,
-      nodeKinds: sc.nodeKinds.map((k) => ({ ...k, titleMeaning: TITLES[k.kind] || k.titleMeaning })),
-      observedRelationships: sc.observedRelationships.map((r) => ({ ...r, meaning: MEANINGS[r.type] || r.meaning })),
+      nodeKinds: sc.nodeKinds.map((k) => ({ ...k, titleMeaning: TITLES[k.kind] || (clsDesc.has(k.kind) || !BASE_KINDS.has(k.kind) ? `Knowledge-graph entity label (class ${k.kind}${clsDesc.get(k.kind) ? ': ' + clsDesc.get(k.kind) : ''}); id is kg:<entity id>` : k.titleMeaning) })),
+      observedRelationships: sc.observedRelationships.map((r) => ({ ...r, meaning: MEANINGS[r.type] || (r.type === 'MENTIONED_IN' ? KG_MENTIONED : relDesc.has(r.type) ? `Knowledge-graph fact: ${relDesc.get(r.type).label}${relDesc.get(r.type).desc ? ' — ' + relDesc.get(r.type).desc : ''}` : r.meaning) })),
     }));
     d.vocabulary = Object.fromEntries(Object.entries(MEANINGS).map(([t, m]) => [t, { meaning: m, ...(RULES[t] ? { from: RULES[t].from, to: RULES[t].to, editable: true } : { editable: false }) }]));
+    if (kg) {
+      d.vocabulary.MENTIONED_IN = { meaning: KG_MENTIONED, from: ['<entity>'], to: ['Note', 'Task', 'Event'], editable: false };
+      for (const r of o.relations) d.vocabulary[kgType(r.id)] = { meaning: [r.label, r.desc].filter(Boolean).join(' — '), from: [r.domain || 'any'], to: [r.range || 'any'], editable: false, source: `analysis #${kg.job}` };
+      d.knowledgeGraph = { analysis: kg.job, classes: o.classes.map((c) => ({ kind: kgKind(c.id), label: c.label, parent: c.parent ? kgKind(c.parent) : '', desc: c.desc })),
+        note: 'Entities have ids kg:<entity id>. Change them by running Relations › Analyze again, not with /api/link.' };
+    }
     return d;
   }
   return { ensure, close, view, neighbors, trace, stats, describe, fileOf };

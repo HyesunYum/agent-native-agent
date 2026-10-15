@@ -203,14 +203,19 @@
       "id": "relations-analysis",
       "title": "Relations analysis — ontology & knowledge graph",
       "skill": "relations",
-      "summary": "System › Relations › Analyze: pick notes / tasks / events (and a focus), the agent reads them via /api/analysis/input, reports progress, and posts an ontology (classes with parents, relation types with domain → range) and a knowledge graph (entities with classes, facts with relations, each citing source items). Shown as two views — Ontology and Knowledge graph (force layout, tap an entity for its facts and sources).",
+      "summary": "System › Relations › Analyze: pick notes / tasks / events (and a focus), the agent reads them via /api/analysis/input, reports progress, and posts an ontology (classes with parents, relation types with domain → range) and a knowledge graph (entities with classes, facts with relations, each citing source items). Shown as two views — Ontology and Knowledge graph (force layout, tap an entity for its facts and sources). Results must fit the ontology (entity classes and fact relations exist, facts respect domain → range with sub-classes); misfits are dropped and listed as issues. The ontology accumulates per workspace and seeds the next analysis. The latest knowledge graph is indexed in NodeRel (entities kg:<id>, facts typed by relation, MENTIONED_IN to source items) for /api/graph/neighbors · trace · schema. Exports OWL/Turtle (/api/analysis/ttl) and opens in OntoAir through a 24-hour token link (/api/analysis/shared/<token>/<name>.ttl, CORS).",
       "anchors": [
         "/api/analysis/start",
         "/api/analysis/result",
         "function cleanAnalysis",
         "anaModal",
         "function renderAnalysis",
-        "function drawKG"
+        "function drawKG",
+        "function mergeOntology",
+        "function analysisTurtle",
+        "/api/analysis/share",
+        "function openInOntoAir",
+        "KG_PREFIX"
       ]
     },
     {
@@ -260,6 +265,20 @@
         "function renderRequestsAll",
         "ST_BUCKETS",
         "data-stseg"
+      ]
+    },
+    {
+      "id": "agent-requirements",
+      "title": "Requirements (user → system) with reflection analysis",
+      "skill": "agent-requests",
+      "summary": "Collaborate › Requirements: the user writes what they want this ANA to do. Analyze has the agent check each requirement against the actual code, dashboard, APIs and data, and report its status (Reflected · Partly · Not reflected), how it is reflected, why not (not built yet, conflicts, needs info, out of scope, blocked), evidence and the next step. Progress bar while running; filter by status; editing a requirement marks its analysis as stale.",
+      "anchors": [
+        "/api/requirements/analyze",
+        "/api/requirements/result",
+        "REQUIREMENTS_FILE",
+        "requirementsView",
+        "function renderRequirements",
+        "function analyzeRequirements"
       ]
     },
     {

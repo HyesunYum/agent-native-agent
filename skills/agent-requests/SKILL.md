@@ -18,6 +18,21 @@ All three live under **Collaborate** (see app-shell):
 | **Evolve** | agent → the app | "Add a due-date filter to Tasks" (the agent proposes; the user approves; the agent implements) |
 | **Requests** | agent → the user | "Which calendar should I sync?", "Grant access to the shared drive", "Confirm the budget" |
 
+## Requirements (user → system)
+
+**Collaborate › Requirements** runs the other direction from Requests: the **user** writes what they want this ANA to do, and the agent reports how far the system already does it.
+
+- **Store:** `requirements.json` holds one list for the whole ANA, not per workspace: `{items:[{id, title, detail, by, at, analysis}], jobs:[…]}`. `POST /api/requirements {action: add|update|remove}` edits it. Editing the title or details marks the analysis `stale` ("Changed since — analyze again").
+- **Analyze:**
+  1. `POST /api/requirements/analyze {ids?}` starts a job for all requirements, or one card's *Analyze this*. One job runs at a time.
+  2. The page sends the agent a `[Requirements]` instruction with the curls. The agent reads `GET /api/requirements/input?job=`, which includes this ANA's folder, `features.json` and `CHANGELOG.md`, and is told to check the real code, dashboard, APIs and data and change nothing.
+  3. It reports `POST /api/requirements/progress {job, progress, step}`, then posts `POST /api/requirements/result {job, summary, results:[{id, status: reflected|partial|missing, how, why, evidence[], next}]}`. Results for unknown ids or with another status are dropped. `/fail` and `/cancel` end a job.
+- **Screen:**
+  - An input card on top, then the Analyze button with a one-line tally, then a progress or last-analysis card.
+  - A filter: All · Reflected · Partly · Missing · Unchecked, with counts.
+  - Cards with a status badge and the analysis: *How it is reflected* (or *Current state*), *Why not (yet)*, *Evidence*, *Next step*.
+  - Each card has Analyze again, Discuss (adds a context chip), Edit and Delete.
+
 ## Four lists in every tab
 
 Each Collaborate tab has a status filter (five equal columns on phones, label above count), **Waiting · In progress · Done · Failed · Cancelled**, with a count on each (`ST_BUCKETS`, `BUCKET_OF`, `renderStSeg`). The pick is remembered per tab in `localStorage ana-collab-filter`. Waiting and In progress list oldest first; Done and Cancelled list newest first, with the time.

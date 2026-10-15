@@ -1072,6 +1072,10 @@ body.sys-mode .ws-combo { display: none; }
 @keyframes anaslide { 0% { transform: translateX(-100%); } 100% { transform: translateX(340%); } }
 .ana-step { font-size: 13px; color: var(--text-sub); } .ana-warn { margin-top: 6px; font-size: 12.5px; color: var(--warm-fg); }
 .ana-acts { display: flex; gap: 8px; margin-top: 10px; } .ana-acts button { height: 32px; padding: 0 12px; border-radius: 8px; font-size: 13px; font-weight: 700; background: var(--surface-2); box-shadow: 0 0 0 1px var(--line); }
+.ana-out { margin: 0 0 12px; } .ana-out button:first-child { background: var(--blue); color: var(--white); box-shadow: none; }
+.ana-issues { margin: 0 0 10px; font-size: 12.5px; color: var(--warm-fg); } .ana-issues summary { cursor: pointer; font-weight: 700; }
+.ana-issues ul { margin: 6px 0 0; padding-left: 18px; color: var(--text-sub); max-height: 180px; overflow: auto; } .ana-issues li { margin: 2px 0; overflow-wrap: anywhere; }
+.ana-base { margin-top: 12px; font-size: 12.5px; color: var(--text-weak); } .ana-base button { margin-left: 6px; font-size: 12.5px; font-weight: 700; color: var(--blue); }
 .ana-sum { margin: 8px 0 10px; font-size: 13.5px; color: var(--text-sub); line-height: 1.55; }
 .ana-seg { display: inline-flex; background: var(--surface-2); border-radius: 999px; padding: 3px; margin: 2px 0 12px; box-shadow: 0 0 0 1px var(--line-2); }
 .ana-seg button { height: 30px; padding: 0 14px; border-radius: 999px; font-size: 13px; font-weight: 800; color: var(--text-sub); }
@@ -1093,7 +1097,23 @@ body.sys-mode .ws-combo { display: none; }
 .kg-detail { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 13px; }
 .kg-detail[hidden] { display: none; } .kg-detail ul { margin: 6px 0 0; padding-left: 18px; } .kg-detail .src { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
 .ana-picks { display: grid; gap: 8px; margin: 12px 0; } .ana-pick { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-weight: 700; font-size: 14px; }
-.ana-pick .n { margin-left: auto; color: var(--text-weak); font-weight: 600; font-size: 12.5px; } .ana-opt { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-sub); margin: 4px 0 12px; }
+.ana-pick .n { margin-left: auto; color: var(--text-weak); font-weight: 600; font-size: 12.5px; } .ana-opt { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-sub); margin: 4px 0 12px; } .ana-opt[hidden] { display: none; } .ana-opt .n { color: var(--text-weak); font-size: 12px; }
+.rqm-add { padding: 12px; display: grid; gap: 8px; margin-bottom: 12px; }
+.rqm-add input, .rqm-add textarea { width: 100%; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); box-shadow: 0 0 0 1px var(--line); color: var(--text); font: inherit; font-size: 14px; resize: vertical; }
+.rqm-add input { font-weight: 700; }
+.rqm-add-acts { display: flex; justify-content: flex-end; } .rqm-add-acts .ok, .rqm-edit .ok { height: 34px; padding: 0 14px; border-radius: 10px; background: var(--blue); color: var(--white); font-weight: 800; font-size: 13px; }
+.rqm-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 12px; } .rqm-sum { font-size: 12.5px; color: var(--text-weak); }
+.rqm-card { padding: 14px 16px; margin-bottom: 10px; }
+.rqm-top { display: flex; align-items: flex-start; gap: 8px; } .rqm-top .t { flex: 1; min-width: 0; font-weight: 800; font-size: 15px; overflow-wrap: anywhere; } .rqm-top .n { font-size: 12px; color: var(--text-weak); white-space: nowrap; }
+.rqm-badge { flex: 0 0 auto; font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; white-space: nowrap; background: var(--surface-2); color: var(--text-sub); }
+.rqm-badge.reflected { background: var(--success-bg); color: var(--success); } .rqm-badge.partial { background: var(--warm-bg); color: var(--warm-fg); } .rqm-badge.missing { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+.rqm-detail { margin-top: 6px; font-size: 13.5px; color: var(--text-sub); white-space: pre-wrap; overflow-wrap: anywhere; }
+.rqm-an { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 13.5px; line-height: 1.55; }
+.rqm-an h5 { margin: 8px 0 2px; font-size: 11.5px; font-weight: 800; color: var(--text-weak); letter-spacing: .03em; text-transform: uppercase; } .rqm-an h5:first-child { margin-top: 0; }
+.rqm-an p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; } .rqm-an ul { margin: 2px 0 0; padding-left: 18px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; } .rqm-an li { overflow-wrap: anywhere; }
+.rqm-an .meta { margin-top: 8px; font-size: 11.5px; color: var(--text-weak); } .rqm-an .stale { color: var(--warm-fg); font-weight: 700; }
+.rqm-acts { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; } .rqm-acts button { height: 30px; padding: 0 11px; border-radius: 8px; font-size: 12.5px; font-weight: 700; background: var(--surface-2); box-shadow: 0 0 0 1px var(--line); color: var(--text-sub); }
+.rqm-edit { display: grid; gap: 8px; margin-top: 8px; } .rqm-edit input, .rqm-edit textarea { width: 100%; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); box-shadow: 0 0 0 1px var(--line); color: var(--text); font: inherit; font-size: 14px; }
 .ana-lead { font-size: 13px; color: var(--text-sub); line-height: 1.55; margin: 4px 0 0; }
 .rel-graph svg { display: block; min-width: 560px; width: 100%; height: auto; }
 .rel-graph .colh { font-size: 11px; font-weight: 800; fill: var(--text-weak); letter-spacing: .02em; }
@@ -1255,6 +1275,7 @@ body.sys-mode .ws-combo { display: none; }
       <button class="tab" data-view="evolve" data-group="collab" role="tab" aria-selected="false">Evolve<span class="tbadge" id="evoBadge">0</span></button>
       <button class="tab" data-view="approvals" data-group="collab" role="tab" aria-selected="false">Approvals<span class="tbadge" id="apprBadge">0</span></button>
       <button class="tab" data-view="requests" data-group="collab" role="tab" aria-selected="false">Requests<span class="tbadge" id="reqBadge">0</span></button>
+      <button class="tab" data-view="requirements" data-group="collab" role="tab" aria-selected="false">Requirements</button>
       <button class="tab" data-view="files" data-group="sys" role="tab" aria-selected="false">Files</button>
       <button class="tab" data-view="stats" data-group="sys" role="tab" aria-selected="false">Stats</button>
       <button class="tab" data-view="relations" data-group="sys" role="tab" aria-selected="false">Relations</button>
@@ -1374,6 +1395,21 @@ body.sys-mode .ws-combo { display: none; }
     <div class="stseg" data-stseg="req" role="tablist" aria-label="Request status"></div>
     <div id="reqList"></div>
     <div class="empty" id="reqEmpty"></div>
+  </div></section>
+
+  <!-- 협업 › 요구사항: 사용자가 바라는 것을 적고, 에이전트가 이 ANA에 어떻게 반영돼 있는지(안 됐다면 왜인지) 분석 -->
+  <section class="view" id="requirementsView" role="tabpanel"><div class="wrap">
+    <div class="evo-head"><span class="evo-lead">What you want this ANA to do. Analyze has the agent check each one against the system — how it is reflected, or why it isn't yet</span></div>
+    <form class="card rqm-add" id="rqmAdd" autocomplete="off">
+      <input id="rqmTitle" maxlength="200" placeholder="Requirement — e.g. Show overdue tasks first" aria-label="Requirement">
+      <textarea id="rqmDetail" rows="2" maxlength="4000" placeholder="Details (optional) — why it matters, how you'd check it" aria-label="Details"></textarea>
+      <div class="rqm-add-acts"><button type="submit" class="ok">Add requirement</button></div>
+    </form>
+    <div class="rqm-bar"><button class="ana-btn" id="rqmAnalyze">Analyze</button><span class="rqm-sum" id="rqmSum"></span></div>
+    <div class="card ana-card" id="rqmJob" hidden></div>
+    <div class="stseg" id="rqmFilter" role="tablist" aria-label="Requirement status"></div>
+    <div id="rqmList"></div>
+    <div class="empty" id="rqmEmpty"></div>
   </div></section>
 
   <!-- 협업 › 승인: 에이전트가 일을 하려면 사용자 승인이 필요한 것(데이터 변경 제안 · 결정 · 접근 · 승인 요청) -->
@@ -1595,6 +1631,7 @@ body.sys-mode .ws-combo { display: none; }
   <p class="ana-lead">The agent reads the items you pick and builds an <b>ontology</b> (the kinds of things and relations) and a <b>knowledge graph</b> (the actual things and facts).</p>
   <div class="ana-picks" id="anaPicks"></div>
   <label class="ana-opt"><input type="checkbox" id="anaOpen"> Only open tasks and events</label>
+  <label class="ana-opt" id="anaBaseRow" hidden><input type="checkbox" id="anaBase" checked> <span>Build on this workspace's ontology <span class="n" id="anaBaseN"></span></span></label>
   <div class="fld"><input id="anaFocus" placeholder="Focus (optional) — e.g. people, organizations, places" maxlength="300" aria-label="Analysis focus"></div>
   <div class="modal-acts"><button class="cancel" data-close>Cancel</button><button class="ok" id="anaStart">Start analysis</button></div>
 </div>
@@ -1616,6 +1653,9 @@ const escapeHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '
 const post = (p, body) => fetch(p, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 // 워크스페이스 범위: 이 탭의 모든 /api 호출에 x-ana-workspace 헤더를 싣는다(서버가 상태 파일을 고른다).
 let currentWs = '', workspaces = [], wsEditing = '', wsDrag = null;
+// 에이전트 지시문에 넣을 서버 주소 — 브라우저 주소가 아니라 에이전트가 직접 닿는 로컬 주소(/api/agent-base)
+let agentHost = location.host;
+fetch('/api/agent-base').then((r) => r.ok ? r.json() : null).then((d) => { if (d && d.host) agentHost = d.host; }).catch(() => {});
 {
   const nativeFetch = window.fetch.bind(window);
   window.fetch = (input, init = {}) => {
@@ -2093,7 +2133,7 @@ async function reqAnswer(card, answer) {
   const id = Number(card.dataset.rid), r = requestsCache.find((x) => x.id === id); if (!r) return;
   if (!(await reqAct(id, 'answer', answer))) return;
   openChat();
-  const msg = `[Request #${id}] You asked: "${r.title}"\nMy answer: ${answer}\nAct on it, then mark the request done: POST http://${location.host}/api/request-act {"id":${id},"action":"done"}`;
+  const msg = `[Request #${id}] You asked: "${r.title}"\nMy answer: ${answer}\nAct on it, then mark the request done: POST http://${agentHost}/api/request-act {"id":${id},"action":"done"}`;
   post('/api/chat', { text: msg, force: true }).then((x) => { if (!x.ok) x.json().then((e) => showErr(e.error || 'Could not send the answer to the agent')).catch(() => {}); })
     .catch(() => showErr('Could not send the answer to the agent'));
 }
@@ -2115,7 +2155,7 @@ $('reqList').addEventListener('keydown', (e) => {
 });
 $('reqAsk').onclick = () => {
   const b = $('reqAsk'); b.disabled = true; const orig = b.textContent; b.textContent = 'Requesting…';
-  const h = location.host;
+  const h = agentHost;
   const prompt = `[Requests] Look at how this system is being run — tasks, notes, calendar, their relations and our recent conversation — and register work you need FROM ME: actions only I can do (kind action) and information you are missing (kind info). Things you need my OK for go in as kind approval / decision / access (they show under Approvals). Do not register changes to the app itself (those are Evolve proposals).
 Register: curl -s -X POST http://${h}/api/requests -H 'content-type: application/json' -d '{"requests":[{"kind":"decision","title":"Short question","desc":"Why it matters","options":["A","B"],"ref":"<optional task/event/note id>"}]}' (kind is action|info|approval|decision|access; options only for decisions).
 Where the flow breaks: GET http://${h}/api/stats (graph.gaps) · relations: GET http://${h}/api/graph/schema · open requests: GET http://${h}/api/requests.`;
@@ -2124,7 +2164,7 @@ Where the flow breaks: GET http://${h}/api/stats (graph.gaps) · relations: GET 
 };
 $('apprAsk').onclick = () => {
   const b = $('apprAsk'); b.disabled = true; const orig = b.textContent; b.textContent = 'Requesting…';
-  const h = location.host;
+  const h = agentHost;
   const prompt = `[Approvals] Before you go on with any work, list what you need my OK for — a step you should not take on your own (deleting or overwriting things, spending money, sending messages to other people, changing settings), a choice between options, or access you need me to grant. Register each one; I will approve or reject it in Collaborate › Approvals. Data changes to the board still go through the diff → approve flow.
 Register: curl -s -X POST http://${h}/api/requests -H 'content-type: application/json' -d '{"requests":[{"kind":"approval","title":"What you want to do","desc":"Why, and what happens if I say no","options":["Approve","Reject"],"ref":"<optional task/event/note id>"}]}' (kind is approval|decision|access). Open ones: GET http://${h}/api/requests.`;
   post('/api/chat', { text: prompt, force: true }).then((r) => { if (!r.ok) r.json().then((e) => showErr(e.error || 'Request failed')).catch(() => {}); else openChat(); })
@@ -2178,10 +2218,95 @@ $('evoList').addEventListener('click', (e) => {
 });
 $('evoAnalyze').onclick = () => {
   const b = $('evoAnalyze'); b.disabled = true; const orig = b.textContent; b.textContent = 'Requesting…';
-  const prompt = `[Evolve] Look at this app's current features, the data in it, and how it is being used (usage log: GET http://${location.host}/api/activity, plus our recent conversation), then propose how the app should evolve — register improve/add/remove proposals.\nRegister: curl -s -X POST http://${location.host}/api/evolve -H 'content-type: application/json' -d '{"proposals":[{"type":"improve","title":"Title","desc":"Description"}]}' (type is improve|add|remove).\nHow notes, tasks and events relate: GET http://${location.host}/api/graph/schema (NodeRel graph) and /api/stats (graph.gaps).`;
+  const prompt = `[Evolve] Look at this app's current features, the data in it, and how it is being used (usage log: GET http://${agentHost}/api/activity, plus our recent conversation), then propose how the app should evolve — register improve/add/remove proposals.\nRegister: curl -s -X POST http://${agentHost}/api/evolve -H 'content-type: application/json' -d '{"proposals":[{"type":"improve","title":"Title","desc":"Description"}]}' (type is improve|add|remove).\nHow notes, tasks and events relate: GET http://${agentHost}/api/graph/schema (NodeRel graph) and /api/stats (graph.gaps).`;
   post('/api/chat', { text: prompt, force: true }).then((r) => { if (!r.ok) r.json().then((e) => showErr(e.error || 'Analyze request failed')).catch(() => {}); else openChat(); })
     .catch(() => showErr('Analyze request failed')).finally(() => { b.disabled = false; b.textContent = orig; });
 };
+
+/* ---- 협업 › Requirements ---- 사용자가 적은 요구사항 + 에이전트의 반영 분석(어떻게 반영됐나 / 왜 안 됐나 / 근거 / 다음 단계) */
+let rqmCache = { items: [], job: null }, rqmFilterKey = 'all', rqmEditing = 0;
+const RQM_STATUS = { reflected: 'Reflected', partial: 'Partly', missing: 'Not reflected' };
+try { rqmFilterKey = localStorage.getItem('ana-rqm-filter') || 'all'; } catch {}
+async function refreshRequirements() { try { rqmCache = await getJSON('/api/requirements'); } catch { return; } renderRequirements(); }
+function rqmBucket(x) { return x.analysis ? x.analysis.status : 'none'; }
+function renderRequirements() {
+  const items = rqmCache.items || [], j = rqmCache.job;
+  const cnt = { all: items.length, reflected: 0, partial: 0, missing: 0, none: 0 }; items.forEach((x) => cnt[rqmBucket(x)]++);
+  const F = [['all', 'All'], ['reflected', 'Reflected'], ['partial', 'Partly'], ['missing', 'Missing'], ['none', 'Unchecked']];   // 폰의 다섯 칸에 들어가게 짧게(카드 배지는 풀어 쓴다)
+  $('rqmFilter').innerHTML = F.map(([k, l]) => `<button role="tab" data-k="${k}" class="${rqmFilterKey === k ? 'on' : ''}" aria-selected="${rqmFilterKey === k}">${l}<span class="n">${cnt[k]}</span></button>`).join('');
+  $('rqmFilter').hidden = !items.length;
+  const stale = items.filter((x) => x.analysis && x.analysis.stale).length;
+  $('rqmSum').textContent = items.length ? `${cnt.reflected} reflected · ${cnt.partial} partly · ${cnt.missing} not reflected${cnt.none ? ` · ${cnt.none} not analyzed` : ''}${stale ? ` · ${stale} changed since analysis` : ''}` : '';
+  const running = j && j.status === 'running';
+  $('rqmAnalyze').textContent = running ? 'Analyzing…' : 'Analyze'; $('rqmAnalyze').disabled = !items.length;
+  // 진행 카드
+  const card = $('rqmJob');
+  if (j && (running || j.status === 'failed' || (j.status === 'done' && j.summary))) {
+    card.hidden = false;
+    if (running) {
+      const staleJ = Date.now() - Date.parse(j.updatedAt) > 180000;
+      card.innerHTML = `<div class="ana-top"><b>Analyzing ${j.ids.length} requirement${j.ids.length === 1 ? '' : 's'}</b><span class="sub">${ago(j.at)}</span></div>
+        <div class="ana-bar${j.progress ? '' : ' indet'}"><i style="width:${j.progress}%"></i></div><div class="ana-step">${j.progress ? j.progress + '% · ' : ''}${escapeHtml(j.step || 'Working')}</div>
+        ${staleJ ? '<div class="ana-warn">No update from the agent for over 3 minutes — check the chat.</div>' : ''}<div class="ana-acts"><button id="rqmChat">Open chat</button><button id="rqmCancel">Cancel</button></div>`;
+      $('rqmChat').onclick = () => openChat();
+      $('rqmCancel').onclick = async () => { await post('/api/requirements/cancel', { job: j.id }).catch(() => {}); refreshRequirements(); };
+    } else if (j.status === 'failed') card.innerHTML = `<div class="ana-top"><b>Analysis failed</b></div><div class="fail-why">✗ ${escapeHtml(j.step || 'Failed')}</div>`;
+    else card.innerHTML = `<div class="ana-top"><b>Last analysis</b><span class="sub">${escapeHtml(fmtWhen(j.doneAt || j.updatedAt))} · ${j.analyzed || 0} requirement${j.analyzed === 1 ? '' : 's'}</span></div><div class="ana-sum">${escapeHtml(j.summary)}</div>`;
+  } else card.hidden = true;
+  const list = items.filter((x) => rqmFilterKey === 'all' || rqmBucket(x) === rqmFilterKey).slice().reverse();
+  $('rqmList').innerHTML = list.map((x) => {
+    const a = x.analysis;
+    if (rqmEditing === x.id) return `<div class="card rqm-card" data-rid="${x.id}"><div class="rqm-edit"><input value="${escapeHtml(x.title)}" maxlength="200" aria-label="Requirement"><textarea rows="3" maxlength="4000" aria-label="Details">${escapeHtml(x.detail || '')}</textarea>
+      <div class="rqm-acts"><button class="ok" data-a="save">Save</button><button data-a="cancel">Cancel</button></div></div></div>`;
+    return `<div class="card rqm-card" data-rid="${x.id}"><div class="rqm-top"><span class="t">${escapeHtml(x.title)}</span>
+      <span class="rqm-badge ${a ? a.status : ''}">${a ? RQM_STATUS[a.status] : 'Not analyzed'}</span><span class="n">#${x.id}</span></div>
+      ${x.detail ? `<div class="rqm-detail">${escapeHtml(x.detail)}</div>` : ''}
+      ${a ? `<div class="rqm-an">${a.how ? `<h5>${a.status === 'missing' ? 'Current state' : 'How it is reflected'}</h5><p>${escapeHtml(a.how)}</p>` : ''}
+        ${a.why ? `<h5>${a.status === 'reflected' ? 'Notes' : 'Why not (yet)'}</h5><p>${escapeHtml(a.why)}</p>` : ''}
+        ${(a.evidence || []).length ? `<h5>Evidence</h5><ul>${a.evidence.map((e) => `<li>${escapeHtml(e)}</li>`).join('')}</ul>` : ''}
+        ${a.next ? `<h5>Next step</h5><p>${escapeHtml(a.next)}</p>` : ''}
+        <div class="meta">Analyzed ${escapeHtml(fmtWhen(a.at))}${a.stale ? ' · <span class="stale">Changed since — analyze again</span>' : ''}</div></div>` : ''}
+      <div class="rqm-acts"><button data-a="one">${a ? 'Analyze again' : 'Analyze this'}</button><button data-a="talk">Discuss</button><button data-a="edit">Edit</button><button data-a="del">Delete</button></div></div>`;
+  }).join('');
+  $('rqmEmpty').textContent = !items.length ? 'No requirements yet — add what you want this ANA to do' : 'Nothing in this list';
+  $('rqmEmpty').style.display = list.length ? 'none' : 'block';
+}
+$('rqmFilter').addEventListener('click', (e) => { const b = e.target.closest('button[data-k]'); if (!b) return; rqmFilterKey = b.dataset.k; try { localStorage.setItem('ana-rqm-filter', rqmFilterKey); } catch {} renderRequirements(); });
+$('rqmAdd').addEventListener('submit', async (e) => {
+  e.preventDefault(); const title = $('rqmTitle').value.trim(); if (!title) { $('rqmTitle').focus(); return; }
+  const r = await post('/api/requirements', { action: 'add', title, detail: $('rqmDetail').value.trim() }).catch(() => null);
+  if (!r || !r.ok) { showErr('Could not add the requirement'); return; }
+  $('rqmTitle').value = ''; $('rqmDetail').value = ''; if (rqmFilterKey !== 'all' && rqmFilterKey !== 'none') rqmFilterKey = 'all'; refreshRequirements();
+});
+async function analyzeRequirements(ids) {
+  let r; try { r = await post('/api/requirements/analyze', ids ? { ids } : {}); } catch { r = null; }
+  const d = r ? await r.json().catch(() => ({})) : {};
+  if (!r || !r.ok) { showErr(d.error || 'Could not start the analysis'); return; }
+  rqmCache.job = d.job; renderRequirements();
+  const h = agentHost, job = d.job.id;
+  const text = `[Requirements] Check ${d.job.ids.length} of my requirements against this ANA and say, for each, whether and how it is reflected.
+1) Read them: curl -s "http://${h}/api/requirements/input?job=${job}" — it also gives this ANA's folder, features.json and CHANGELOG.md. Look at the actual code, the dashboard, the APIs and the data, not just the docs.
+2) Report progress as you go (0–99): curl -s -X POST "http://${h}/api/requirements/progress" -H 'content-type: application/json' -d '{"job":${job},"progress":40,"step":"Checking #3 in dashboard.html"}'
+3) Post the result: curl -s -X POST "http://${h}/api/requirements/result" -H 'content-type: application/json' --data-binary @result.json
+   result.json = {"job":${job},"summary":"2–3 sentences","results":[{"id":<requirement id>,"status":"reflected|partial|missing","how":"where and how it is reflected (tab, feature, behaviour) — or the current state if missing","why":"if partial/missing: why not — not built yet, conflicts with …, needs information …, out of scope, blocked by …","evidence":["file:line or route or UI place"],"next":"the concrete next step"}]}
+Do not change anything while analyzing. If you can't finish: curl -s -X POST "http://${h}/api/requirements/fail" -H 'content-type: application/json' -d '{"job":${job},"reason":"why"}'`;
+  post('/api/chat', { text, force: true }).then((x) => { if (!x.ok) x.json().then((e) => showErr(e.error || 'Could not send it to the agent')).catch(() => {}); }).catch(() => showErr('Could not send it to the agent'));
+}
+$('rqmAnalyze').onclick = () => { if (rqmCache.job && rqmCache.job.status === 'running') { $('rqmJob').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; } analyzeRequirements(); };
+$('rqmList').addEventListener('click', async (e) => {
+  const b = e.target.closest('button[data-a]'), card = e.target.closest('.rqm-card'); if (!b || !card) return;
+  const id = Number(card.dataset.rid), it = rqmCache.items.find((x) => x.id === id); if (!it) return;
+  const a = b.dataset.a;
+  if (a === 'edit') { rqmEditing = id; renderRequirements(); card.querySelector && $('rqmList').querySelector(`[data-rid="${id}"] input`)?.focus(); return; }
+  if (a === 'cancel') { rqmEditing = 0; renderRequirements(); return; }
+  if (a === 'save') { const inp = card.querySelector('input'), ta = card.querySelector('textarea');
+    const r = await post('/api/requirements', { action: 'update', id, title: inp.value.trim(), detail: ta.value.trim() }).catch(() => null);
+    if (!r || !r.ok) { showErr('Could not save'); return; } rqmEditing = 0; refreshRequirements(); return; }
+  if (a === 'del') { if (!(await confirmDelete(`Requirement "${it.title}"`))) return; await post('/api/requirements', { action: 'remove', id }).catch(() => {}); refreshRequirements(); return; }
+  if (a === 'talk') { addChip('Requirement', `#${id} ${it.title}`); openChat(); setTimeout(() => $('input').focus(), 60); return; }
+  if (a === 'one') { if (rqmCache.job && rqmCache.job.status === 'running') { showErr('An analysis is already running'); return; } analyzeRequirements([id]); }
+});
+setInterval(() => { if (!document.hidden && rqmCache.job && rqmCache.job.status === 'running' && $('requirementsView').classList.contains('on')) renderRequirements(); }, 1000);
 
 /* ---- 시스템 › Update ---- 업스트림과 비교한 항목을 다섯 상태로. Update는 에이전트에게 이식을 맡긴다 */
 let updCache = { items: [], lastCheck: null, upstreamDir: '' };
@@ -2233,7 +2358,7 @@ $('updList').addEventListener('click', async (e) => {
   const d = await r.json().catch(() => ({}));
   refreshUpdates();
   if (action === 'do') {
-    const h = location.host, up = d.upstreamDir || updCache.upstreamDir;
+    const h = agentHost, up = d.upstreamDir || updCache.upstreamDir;
     const text = `[Update] Bring "${it.title}" (${it.key}) from the latest agent-native-agent into this ANA.
 Upstream checkout: ${up} @ ${String(it.upstreamCommit || '').slice(0, 7)} — follow ${up}/skills/${it.skill}/SKILL.md (Porting) and the rules in ${up}/skills/ana-update/SKILL.md: port into this ANA's own files, keep its domain code${it.kind === 'runtime' ? '; this item IS the shared runtime — replace channel-core.js whole, never patch it' : ', never patch channel-core.js'}.
 ${(it.missing || []).length ? `Missing here: ${it.missing.join(', ')}.\n` : ''}${(it.modules || []).length ? `Modules: ${it.modules.join(', ')}.\n` : ''}${(it.npm || []).length ? `npm: ${it.npm.join(', ')}.\n` : ''}Verify with the tests and a look at the page. Then report: curl -s -X POST http://${h}/api/update-act -H 'content-type: application/json' -d '{"id":${id},"action":"done"}' — or if it can't be done: -d '{"id":${id},"action":"fail","reason":"why"}'.`;
@@ -2460,10 +2585,11 @@ async function renderStats() {
 }
 
 /* ---- 관계 분석: 대상 고르기 → 에이전트가 분석(진행률) → 온톨로지 · 지식그래프를 나눠 보여 준다 ---- */
-let anaJob = null, anaView = 'onto', anaSel = '';
+let anaJob = null, anaView = 'onto', anaSel = '', anaOnto = null;
+const ONTOAIR = 'https://poc.aifactory.space/ontoair/';
 const ANA_COLORS = ['#3182F6', '#F59E0B', '#10B981', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899', '#84CC16', '#F97316', '#64748B'];
 async function refreshAnalysis() {
-  try { const d = await getJSON('/api/analysis'); anaJob = d.latest; } catch { return; }
+  try { const d = await getJSON('/api/analysis'); anaJob = d.latest; anaOnto = d.ontology; } catch { return; }
   renderAnalysis();
 }
 function openAnaModal() {
@@ -2471,6 +2597,9 @@ function openAnaModal() {
   const picks = [['notes', 'Notes', notes.length], ['tasks', 'Tasks', nTasks], ['events', 'Events', nEvents]];
   $('anaPicks').innerHTML = picks.map(([k, l, n]) => `<label class="ana-pick"><input type="checkbox" value="${k}" ${n ? 'checked' : 'disabled'}> ${l}<span class="n">${n} item${n === 1 ? '' : 's'}</span></label>`).join('');
   $('anaFocus').value = ''; $('anaOpen').checked = false;
+  // 쌓인 온톨로지가 있으면 그걸 이어 쓰는 게 기본 — 회차마다 같은 개념이 다른 이름으로 생기지 않게
+  $('anaBaseRow').hidden = !anaOnto; $('anaBase').checked = true;
+  if (anaOnto) $('anaBaseN').textContent = `${anaOnto.classes.length} classes · ${anaOnto.relations.length} relations`;
   openModal('anaModal');
 }
 $('anaBtn').onclick = () => { if (anaJob && anaJob.status === 'running') { $('anaCard').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; } openAnaModal(); };
@@ -2478,18 +2607,19 @@ $('anaStart').onclick = async () => {
   const kinds = [...$('anaPicks').querySelectorAll('input:checked')].map((x) => x.value);
   if (!kinds.length) { showErr('Pick at least one kind of item'); return; }
   const b = $('anaStart'); b.disabled = true;
-  let r; try { r = await post('/api/analysis/start', { kinds, openOnly: $('anaOpen').checked, focus: $('anaFocus').value.trim() }); } catch { r = null; }
+  let r; try { r = await post('/api/analysis/start', { kinds, openOnly: $('anaOpen').checked, focus: $('anaFocus').value.trim(), useBase: !!anaOnto && $('anaBase').checked }); } catch { r = null; }
   b.disabled = false;
   const d = r ? await r.json().catch(() => ({})) : {};
   if (!r || !r.ok) { showErr(d.error || 'Could not start the analysis'); return; }
   closeModal(); anaJob = d.job; renderAnalysis();
-  const h = location.host, ws = encodeURIComponent(currentWs || ''), id = d.job.id, q = `id=${id}&ws=${ws}`;
+  const h = agentHost, ws = encodeURIComponent(currentWs || ''), id = d.job.id, q = `id=${id}&ws=${ws}`;
   const text = `[Analyze] Build an ontology and a knowledge graph from ${d.job.itemIds.length} items of this workspace${d.job.focus ? ` — focus: ${d.job.focus}` : ''}.
-1) Read them: curl -s "http://${h}/api/analysis/input?${q}"
+1) Read them: curl -s "http://${h}/api/analysis/input?${q}"${d.job.useBase ? `
+   The input includes "ontology" — the classes and relation types this workspace already has. Reuse those ids for the same concepts and add new ones only when needed.` : ''}
 2) Report progress as you go (0–99) with a short step: curl -s -X POST "http://${h}/api/analysis/progress?ws=${ws}" -H 'content-type: application/json' -d '{"id":${id},"progress":30,"step":"Finding entities in notes"}'
 3) Post the result: curl -s -X POST "http://${h}/api/analysis/result?ws=${ws}" -H 'content-type: application/json' --data-binary @result.json
    result.json = {"id":${id},"summary":"2–3 sentences","ontology":{"classes":[{"id":"Organization","label":"Organization","desc":"…","parent":""}],"relations":[{"id":"client_of","label":"client of","domain":"Organization","range":"Organization","desc":"…"}]},"graph":{"entities":[{"id":"acme","label":"Acme","class":"Organization","sources":["<item id>"]}],"facts":[{"from":"acme","rel":"client_of","to":"us","sources":["<item id>"]}]}}
-The ontology is the schema (kinds of things, kinds of relations, with parents for sub-kinds); the knowledge graph is the actual things and facts found in the items. Every entity.class and fact.rel must use an id from the ontology; cite the item ids each comes from. If you can't finish: curl -s -X POST "http://${h}/api/analysis/fail?ws=${ws}" -H 'content-type: application/json' -d '{"id":${id},"reason":"why"}'`;
+The ontology is the schema (kinds of things, kinds of relations, with parents for sub-kinds); the knowledge graph is the actual things and facts found in the items. Every entity.class and fact.rel must use an id from the ontology, and each fact must fit its relation's domain → range (sub-classes count); cite the item ids each comes from. The response lists "issues" — facts that broke the ontology were dropped; if many were, fix and post again in a new analysis. If you can't finish: curl -s -X POST "http://${h}/api/analysis/fail?ws=${ws}" -H 'content-type: application/json' -d '{"id":${id},"reason":"why"}'`;
   post('/api/chat', { text, force: true }).then((x) => { if (!x.ok) x.json().then((e) => showErr(e.error || 'Could not send it to the agent')).catch(() => {}); }).catch(() => showErr('Could not send it to the agent'));
 };
 const ago = (iso) => { const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000)); return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${Math.floor(s / 3600)}h ${Math.floor(s % 3600 / 60)}m`; };
@@ -2519,21 +2649,58 @@ function renderAnalysis() {
   const o = j.ontology || { classes: [], relations: [] }, g = j.graph || { entities: [], facts: [] };
   c.innerHTML = head(`Analysis #${j.id}`, `${escapeHtml(fmtWhen(j.doneAt || j.updatedAt))} · ${escapeHtml(targets)} · ${o.classes.length} classes · ${o.relations.length} relations · ${g.entities.length} entities · ${g.facts.length} facts`) +
     `${j.summary ? `<div class="ana-sum">${escapeHtml(j.summary)}</div>` : ''}
+     ${(j.issues || []).length ? `<details class="ana-issues"><summary>⚠ ${j.issues.length} item${j.issues.length === 1 ? '' : 's'} didn't fit the ontology</summary><ul>${j.issues.map((x) => `<li>${escapeHtml(x.msg)}</li>`).join('')}</ul></details>` : ''}
+     <div class="ana-acts ana-out"><button id="anaOnto" title="Open this ontology and knowledge graph in OntoAir">Open in OntoAir ↗</button><button id="anaTtl">Download .ttl</button></div>
      <div class="ana-seg" role="tablist"><button role="tab" data-v="onto" class="${anaView === 'onto' ? 'on' : ''}" aria-selected="${anaView === 'onto'}">Ontology</button><button role="tab" data-v="kg" class="${anaView === 'kg' ? 'on' : ''}" aria-selected="${anaView === 'kg'}">Knowledge graph</button></div>
      <div id="anaBody"></div>`;
   c.querySelectorAll('.ana-seg button').forEach((b) => b.onclick = () => { anaView = b.dataset.v; renderAnalysis(); });
+  $('anaOnto').onclick = () => openInOntoAir(j);
+  $('anaTtl').onclick = () => downloadTtl(j);
   const color = Object.fromEntries(o.classes.map((k, i) => [k.id, ANA_COLORS[i % ANA_COLORS.length]]));
   if (anaView === 'onto') {
     const kids = (pid) => o.classes.filter((k) => (k.parent || '') === pid);
-    const tree = (pid) => { const ks = kids(pid); return ks.length ? `<ul class="onto-cls">${ks.map((k) => `<li><span class="cdot" style="background:${color[k.id]}"></span><b>${escapeHtml(k.label)}</b>${k.desc ? ` <span class="cd">— ${escapeHtml(k.desc)}</span>` : ''}${tree(k.id)}</li>`).join('')}</ul>` : ''; };
+    const tree = (pid) => { const ks = kids(pid); return ks.length ? `<ul class="onto-cls">${ks.map((k) => `<li><span class="cdot" style="background:${color[k.id]}"></span><b>${escapeHtml(k.label)}</b>${k.inherited ? ' <span class="cd">(earlier)</span>' : ''}${k.desc ? ` <span class="cd">— ${escapeHtml(k.desc)}</span>` : ''}${tree(k.id)}</li>`).join('')}</ul>` : ''; };
     const label = (id) => { const k = o.classes.find((x) => x.id === id); return k ? `<span class="cdot" style="background:${color[k.id]}"></span>${escapeHtml(k.label)}` : escapeHtml(id || 'any'); };
     $('anaBody').innerHTML = `<div class="onto-cols"><div><h4>Classes · ${o.classes.length}</h4>${tree('') || '<div class="empty">No classes</div>'}</div>
-      <div><h4>Relation types · ${o.relations.length}</h4>${o.relations.length ? `<table class="onto-rel"><thead><tr><th>Relation</th><th>From → To</th><th>Uses</th></tr></thead><tbody>${o.relations.map((r) => `<tr><td><code>${escapeHtml(r.label)}</code>${r.desc ? `<div class="cd">${escapeHtml(r.desc)}</div>` : ''}</td><td>${label(r.domain)} → ${label(r.range)}</td><td>${g.facts.filter((f) => f.rel === r.id).length}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No relation types</div>'}</div></div>`;
+      <div><h4>Relation types · ${o.relations.length}</h4>${o.relations.length ? `<table class="onto-rel"><thead><tr><th>Relation</th><th>From → To</th><th>Uses</th></tr></thead><tbody>${o.relations.map((r) => `<tr><td><code>${escapeHtml(r.label)}</code>${r.inherited ? ' <span class="cd">(earlier)</span>' : ''}${r.desc ? `<div class="cd">${escapeHtml(r.desc)}</div>` : ''}</td><td>${label(r.domain)} → ${label(r.range)}</td><td>${g.facts.filter((f) => f.rel === r.id).length}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No relation types</div>'}</div></div>
+      ${anaOnto ? `<div class="ana-base">Workspace ontology: ${anaOnto.classes.length} classes · ${anaOnto.relations.length} relation types, carried into the next analysis. <button id="anaReset">Start fresh</button></div>` : ''}`;
+    if ($('anaReset')) $('anaReset').onclick = async () => {
+      if (!confirm('Forget the ontology built so far? The next analysis starts from nothing. Past results stay.')) return;
+      await post('/api/analysis/ontology/reset', {}).catch(() => {}); refreshAnalysis();
+    };
     return;
   }
   drawKG(g, o, color);
 }
 // 지식그래프: 간단한 힘 기반 배치(개체 = 원, 클래스 색 / 사실 = 선 + 관계 이름). 누르면 그 개체의 사실과 근거 항목
+// OntoAir는 URL #뒤의 주소를 fetch해 그린다. 그 주소로 data: URL을 넘기면 TTL 내용이 URL 안에 통째로 들어가므로
+// 공개 링크·게이트웨이 예외 없이 열린다(해시는 서버로 전송되지 않는다). OntoAir가 붙이는 ?_t=…는 끝의 주석 줄 안으로 들어가고,
+// 마지막 '/이름.ttl'은 OntoAir가 형식(ttl)과 파일 이름을 읽는 자리다. 너무 크면 공개 링크 → 그것도 막히면 내려받기.
+const ONTOAIR_MAX_URL = 1500000;
+async function openInOntoAir(j) {
+  const w = window.open('about:blank', '_blank');          // 팝업 차단을 피하려고 누른 순간에 창부터 연다
+  const go = (u) => { if (w) w.location.href = u; else location.href = u; };
+  try {
+    const r = await fetch(`/api/analysis/ttl?id=${j.id}&ws=${encodeURIComponent(currentWs || '')}`);
+    if (!r.ok) throw new Error('Could not export this analysis');
+    const ttl = await r.text();
+    const data = 'data:text/turtle;charset=utf-8,' + encodeURIComponent(ttl + '\n# ') + `/ana-analysis-${j.id}.ttl`;
+    const url = ONTOAIR + '#' + encodeURIComponent(data);
+    if (url.length <= ONTOAIR_MAX_URL) return go(url);
+    const s = await post('/api/analysis/share', { id: j.id }); const d = await s.json();
+    if (s.ok) {
+      const link = location.origin + d.path;
+      const probe = await fetch(link, { method: 'HEAD', credentials: 'omit', cache: 'no-store' }).catch(() => null);
+      if (probe && probe.ok) return go(ONTOAIR + '#' + encodeURIComponent(link));
+    }
+    downloadTtl(j); go(ONTOAIR);
+    showErr('This graph is too large to hand to OntoAir in a link, so the .ttl was downloaded — open it in OntoAir with 📄 File');
+  } catch (e) { if (w) w.close(); showErr(e.message || 'Could not open OntoAir'); }
+}
+function downloadTtl(j) {
+  const a = document.createElement('a'); a.href = `/api/analysis/ttl?id=${j.id}&ws=${encodeURIComponent(currentWs || '')}`; a.download = `ana-analysis-${j.id}.ttl`;
+  document.body.appendChild(a); a.click(); a.remove();
+}
 function drawKG(g, o, color) {
   const W = 760, H = Math.max(340, Math.min(620, 240 + g.entities.length * 10)), n = g.entities.length;
   const pos = g.entities.map((e, i) => ({ id: e.id, x: W / 2 + Math.cos(i * 2.4) * (40 + i * 6), y: H / 2 + Math.sin(i * 2.4) * (40 + i * 6), vx: 0, vy: 0 }));
@@ -2752,7 +2919,7 @@ function selectTab(b) {
     if (b.dataset.group && b.dataset.group !== appMode) applyArea(b.dataset.group);
     if ($('memoView').classList.contains('on') && b.dataset.view !== 'memo') cleanupEmptyMemos(); // 메모 탭 이탈 시 빈 메모 정리(진화 #3)
     document.querySelectorAll('.topnav .tab').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', String(on)); });
-    ['todo', 'schedule', 'memo', 'evolve', 'approvals', 'requests', 'stats', 'relations', 'reliability', 'safety', 'security', 'update', 'files'].forEach((v) => $(v + 'View').classList.toggle('on', b.dataset.view === v));
+    ['todo', 'schedule', 'memo', 'evolve', 'approvals', 'requests', 'requirements', 'stats', 'relations', 'reliability', 'safety', 'security', 'update', 'files'].forEach((v) => $(v + 'View').classList.toggle('on', b.dataset.view === v));
     lastTab[appMode] = b.dataset.view;
     revealTab(b);
     try { localStorage.setItem('ana-area-tabs', JSON.stringify(lastTab)); } catch {}
@@ -2760,6 +2927,7 @@ function selectTab(b) {
     if (b.dataset.view === 'requests' || b.dataset.view === 'approvals') refreshRequests();
     if (['reliability', 'safety', 'security'].includes(b.dataset.view)) refreshTrust();
     if (b.dataset.view === 'update') refreshUpdates();
+    if (b.dataset.view === 'requirements') refreshRequirements();
     if (b.dataset.view === 'files') loadFiles(filesPath);
     if (b.dataset.view === 'stats') renderStats();
     if (b.dataset.view === 'relations') renderRelations();
@@ -3702,6 +3870,7 @@ function connect() {
       case 'evolve': if ($('evolveView').classList.contains('on')) refreshEvolve(); else refreshEvolve(); break;
       case 'requests': refreshRequests(); break;
       case 'updates': refreshUpdates(); break;
+      case 'requirements': if ($('requirementsView').classList.contains('on')) refreshRequirements(); break;
       case 'analysis': if ($('relationsView').classList.contains('on')) refreshAnalysis(); break;
     }
   };

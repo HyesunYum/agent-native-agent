@@ -7,8 +7,23 @@ To bring an existing ANA up to date with these changes, use the [`ana-update`](s
 
 ## [Unreleased]
 
+### Added
+
+- **Collaborate › Requirements.** Write down what you want this ANA to do. *Analyze* has the agent check each requirement against the actual system and say whether it's **Reflected**, **Partly** or **Not reflected**: how it is reflected, or why not (not built yet, conflicts, needs information, out of scope, blocked), with evidence and the next step.
+  - A progress bar shows while the agent works.
+  - Filter by status. Edit a requirement and its analysis is marked as needing another look.
+- **Relations › Open in OntoAir.** A finished analysis opens in [OntoAir](https://poc.aifactory.space/ontoair/) as a 3D ontology and knowledge graph. *Download .ttl* saves the same OWL/Turtle file. The graph travels inside the link itself (a `data:` URL after `#`, which browsers never send to a server), so it opens even when this ANA sits behind a sign-in gateway, with no public link and no change to OntoAir. Only a very large graph (over ~1.5 MB of link) falls back to a 24-hour token link, or to downloading the file for OntoAir's 📄 File.
+- **[docs/relations.md](docs/relations.md)** explains the two layers of relations (fixed app links and discovered analysis), the analysis process step by step, the ontology, the knowledge graph, the checks, NodeRel indexing and export.
+
+### Changed
+
+- **Analysis results must fit their ontology.** Each entity's class and each fact's relation must exist, and a fact must respect its relation's From → To (sub-classes count). Facts that don't fit are dropped; entities with an unknown class keep their place without a class. Both are listed under *N items didn't fit the ontology* and returned to the agent as `issues`.
+- **The ontology carries over.** Each workspace keeps the classes and relation types built so far, and the next analysis starts from them, so the same concept isn't named differently each time. Classes reused from earlier runs show *(earlier)*. *Start fresh* clears it.
+- **The knowledge graph is part of the relation graph.** The latest analysis is indexed in NodeRel next to notes, tasks and events: entities as `kg:<id>`, facts by relation type, and `MENTIONED_IN` links to the items they came from. The agent can trace from a note to the people and organizations in it with `/api/graph/trace`, and `/api/graph/schema` describes the knowledge-graph vocabulary. The Links flow chart is unchanged.
+
 ### Fixed
 
+- **Instructions sent to the agent used the browser's address.** Through a sign-in gateway (e.g. `base.anahub.io`) the agent's `curl` got 401, so analyses, requirements, evolve proposals, requests and updates couldn't report back. The page now asks the server for its local address (`/api/agent-base` → `127.0.0.1:<port>`) and puts that in every instruction.
 - **Sending failed with "Agent input line is not ready … waiting on a dialog"** when the agent's input line held text that starts with a number and a dot, such as `0.5.1 기준으로…` or `3.14 …`. Reported by world-ana. The check took it for a menu item (`❯ 1. Yes`). Menu items now need a space (or the end of the line) after the dot, in all four places in `channel-core.js`. Real menus are still blocked, and the chat's send clears the leftover text and delivers the message. Regression test in D9.
   - **Numbered-list input** such as `1. run the tests first…` is told apart from a menu by the row under the input box. The normal box has a mode status line (`⏵⏵ auto mode on (shift+tab to cycle)`, `⏸ plan mode on`, `? for shortcuts`). A menu replaces the box and shows a controls hint (`Enter to select · Esc to cancel`) instead. Checked on real Claude Code screens: a typed numbered draft reads as ready, and the `/model` picker still reads as a menu.
 - **Agent-internal notices showed up as your chat bubbles.** Claude Code's `<task-notification>` (a background task finished) now renders as a one-line system note, e.g. *Background task completed: …*, in both the log view and the screen mirror.

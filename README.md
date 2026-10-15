@@ -151,7 +151,7 @@ The base is a solo operations board: notes, tasks and a calendar you run togethe
 | Area | Tabs | For |
 |---|---|---|
 | **Workspace** | Tasks · Calendar · Notes | your own data, per workspace (switch, add, rename, reorder) |
-| **Collaborate** | Evolve · Approvals · Requests | the agent and you working together. The badge counts what is waiting on you |
+| **Collaborate** | Evolve · Approvals · Requests · Requirements | the agent and you working together. The badge counts what is waiting on you |
 | **System** | Stats · Relations · Trustworthiness · Safety · Security | how the system is doing and whether you can trust it. The badge counts checks at risk |
 
 ### Chat — like the Claude app
@@ -192,6 +192,17 @@ Links show as chips on both ends; clicking one jumps to that item. **System › 
 | `GET /api/graph/neighbors?id=` · `GET /api/graph/trace?id=&depth=&direction=&types=` | incident links / everything reachable |
 | `GET /api/graph/schema` | NodeRel's AI-readable schema plus this app's relation meanings. Hand it to the agent |
 | `GET /api/stats` → `graph` | counts per kind/type and the three `gaps` lists |
+
+#### Analyze — ontology and knowledge graph
+
+That graph is the **fixed layer**: the app decides what may link to what. **Relations › Analyze** adds a **discovered layer**. The agent reads the notes, tasks and events you pick and writes two things:
+
+- an **ontology**: the schema. Classes with parents (Client ⊂ Organization ⊂ Agent) and relation types with From → To (`client_of`: Client → Organization).
+- a **knowledge graph**: the data. Entities typed by those classes (Acme is a Client) and facts typed by those relations (Acme `client_of` Our team), each citing the items it came from.
+
+The server checks the result against the ontology (classes and relations must exist, facts must respect From → To, sub-classes count). Facts that don't fit are dropped and reported. The ontology carries over to the next analysis, so concepts keep their names. The knowledge graph is indexed in the same NodeRel graph (`kg:<id>`, `MENTIONED_IN` → source items), so `/api/graph/trace` walks from a note to the people in it. Results open in [OntoAir](https://poc.aifactory.space/ontoair/) as a 3D graph, or download as OWL Turtle.
+
+→ Full write-up, covering both layers, the analysis process, the ontology, the knowledge graph, the checks and export: **[docs/relations.md](docs/relations.md)**
 
 ### Collaborate — Evolve · Approvals · Requests
 

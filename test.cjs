@@ -34,7 +34,7 @@ function t(name, fn) {
 }
 async function ta(name, fn) {
   try { await fn(); passed++; console.log(`  ✓ ${name}`); }
-  catch (e) { failed++; console.log(`  ✗ ${name}\n    ${String(e.message).split('\n')[0]}`); }
+  catch (e) { failed++; console.log(`  ✗ ${name}\n    ${process.env.TEST_VERBOSE ? e.stack : String(e.message).split("\n")[0]}`); }
 }
 
 // ============================================================ Part A: 유닛
@@ -989,6 +989,90 @@ async function integration() {
       j = await (await post('/api/analysis/start', { kinds: ['tasks'] })).json();
       await post('/api/analysis/cancel', { id: j.job.id });
       assert.equal((await (await fetch(`${api}/api/analysis`)).json()).latest.status, 'cancelled');
+    });
+
+    await ta('C18 분석 개선: 온톨로지 틀 검증(domain→range·하위 클래스)·온톨로지 이어 쓰기·NodeRel에 지식그래프·TTL/공유 링크(OntoAir)', async () => {
+      let st = await (await fetch(`${api}/api/analysis`)).json();
+      assert.ok(st.ontology && st.ontology.classes.some((c) => c.id === 'Org'), 'C16 결과가 워크스페이스 온톨로지로 쌓였다');
+      let j = await (await post('/api/analysis/start', { kinds: ['tasks'] })).json(); const id = j.job.id;
+      assert.equal(j.job.useBase, true, '쌓인 온톨로지가 있으면 이어 쓰는 게 기본');
+      const input = await (await fetch(`${api}/api/analysis/input?id=${id}`)).json();
+      assert.ok(input.ontology.classes.some((c) => c.id === 'Org') && input.rules);
+      const src = input.items.find((x) => x.title === 'Call Acme about the quote').id;
+      j = await (await post('/api/analysis/result', { id, summary: 'people', ontology: {
+        classes: [{ id: 'Agent', label: 'Agent' }, { id: 'Person', label: 'Person', parent: 'Agent' }],
+        relations: [{ id: 'works_for', label: 'works for', domain: 'Agent', range: 'Org' }, { id: 'odd', label: 'odd', domain: 'Nope', range: 'Org' }] },
+        graph: { entities: [{ id: 'pat', label: '팻 김', class: 'Person', sources: [src] }, { id: 'acme', label: 'Acme "Co"', class: 'Org', sources: [src] }, { id: 'zed', label: 'Zed', class: 'Alien' }],
+          facts: [{ from: 'pat', rel: 'works_for', to: 'acme', sources: [src] }, { from: 'acme', rel: 'works_for', to: 'acme' }, { from: 'pat', rel: 'works_for', to: 'pat' }, { from: 'pat', rel: 'knows', to: 'acme' }, { from: 'acme', rel: 'client_of', to: 'acme' }] } })).json();
+      assert.equal(j.facts, 2, '하위 클래스(Person ⊂ Agent)는 domain을 통과, 틀을 어긴 사실·모르는 관계는 버린다');
+      const msgs = j.issues.map((x) => x.msg).join('\n');
+      assert.match(msgs, /goes from Agent, but acme is a Org/); assert.match(msgs, /goes to Org, but pat is a Person/);
+      assert.match(msgs, /"knows" is not in the ontology/); assert.match(msgs, /class "Alien" is not in the ontology/); assert.match(msgs, /unknown domain class "Nope"/);
+      const cur = (await (await fetch(`${api}/api/analysis`)).json());
+      const job = cur.latest; assert.ok(job.ontology.classes.some((c) => c.id === 'Org' && c.inherited), '이번 결과가 쓴 기존 클래스는 (earlier)로 붙는다');
+      assert.ok(job.ontology.relations.some((r) => r.id === 'client_of' && r.inherited));
+      assert.deepEqual(['Agent', 'Org', 'Person', 'Sub'].every((c) => cur.ontology.classes.some((x) => x.id === c)), true, '온톨로지가 회차를 넘어 쌓인다');
+      assert.ok(!cur.ontology.classes.some((c) => c.inherited));
+      // NodeRel: 개체 = kg:<id>, 사실 = 관계 id, 근거 = MENTIONED_IN
+      const nb = await (await fetch(`${api}/api/graph/neighbors?id=kg:pat`)).json();
+      assert.ok(nb.links.some((l) => l.type === 'works_for' && l.other.id === 'kg:acme'));
+      assert.ok(nb.links.some((l) => l.type === 'MENTIONED_IN' && l.other.id === src));
+      const tr = await (await fetch(`${api}/api/graph/trace?id=${encodeURIComponent(src)}&depth=2`)).json();
+      assert.ok(tr.nodes.some((n) => n.id === 'kg:acme'), '항목에서 출발해 개체까지 따라간다');
+      const view = await (await fetch(`${api}/api/graph`)).json();
+      assert.ok(!view.links.some((l) => l.type === 'works_for' || l.type === 'MENTIONED_IN'), '흐름 그림에는 지식그래프를 섞지 않는다');
+      const schema = await (await fetch(`${api}/api/graph/schema`)).json();
+      assert.equal(schema.vocabulary.works_for.from[0], 'Agent'); assert.equal(schema.knowledgeGraph.analysis, id);
+      // TTL 내려받기 + 공개 링크
+      let r = await fetch(`${api}/api/analysis/ttl?id=${id}`); assert.equal(r.status, 200); assert.match(r.headers.get('content-type'), /text\/turtle/);
+      const ttl = await r.text();
+      assert.match(ttl, /ana:Person rdf:type owl:Class ;\n {4}rdfs:label "Person" ;\n {4}rdfs:subClassOf ana:Agent \./);
+      assert.match(ttl, /ana:works_for rdf:type owl:ObjectProperty/); assert.match(ttl, /kg:pat rdf:type ana:Person ;\n {4}rdfs:label "팻 김" ;\n {4}ana:works_for kg:acme/);
+      assert.match(ttl, /rdfs:label "Acme \\"Co\\""/, '따옴표는 이스케이프');
+      r = await post('/api/analysis/share', { id }); const sh = await r.json(); assert.match(sh.path, /^\/api\/analysis\/shared\/[0-9a-f]{40}\/ana-analysis-\d+\.ttl$/);
+      assert.equal((await (await post('/api/analysis/share', { id })).json()).path, sh.path, '남은 시간이 넉넉하면 같은 링크');
+      r = await fetch(api + sh.path); assert.equal(r.status, 200); assert.equal(r.headers.get('access-control-allow-origin'), '*'); assert.equal(await r.text(), ttl);
+      const tok = sh.path.match(/([0-9a-f]{40})/)[1];
+      assert.equal((await fetch(`${api}/api/analysis/share-access?t=${tok}`, { method: 'HEAD' })).status, 204);
+      assert.equal((await fetch(`${api}/api/analysis/share-access?t=${'0'.repeat(40)}`, { method: 'HEAD' })).status, 404);
+      assert.equal((await fetch(`${api}/api/analysis/shared/${'0'.repeat(40)}/x.ttl`)).status, 404);
+      // 처음부터 다시
+      await post('/api/analysis/ontology/reset', {});
+      assert.equal((await (await fetch(`${api}/api/analysis`)).json()).ontology, null);
+      j = await (await post('/api/analysis/start', { kinds: ['tasks'] })).json(); assert.equal(j.job.useBase, false);
+      await post('/api/analysis/cancel', { id: j.job.id });
+      const ab = await (await fetch(`${api}/api/agent-base`)).json();
+      assert.equal(ab.host, `127.0.0.1:${new URL(api).port}`, '에이전트 지시문 주소는 브라우저 주소가 아니라 서버의 로컬 주소');
+    });
+
+    await ta('C17 요구사항(Requirements): 추가·수정(분석 낡음 표시)·삭제, 분석 작업→결과(상태 검증)·한 번에 하나', async () => {
+      let r = await post('/api/requirements', { action: 'add', title: '' }); assert.equal(r.status, 400);
+      const a1 = (await (await post('/api/requirements', { action: 'add', title: 'Show overdue tasks first', detail: 'At the top of Tasks' })).json()).item;
+      const a2 = (await (await post('/api/requirements', { action: 'add', title: 'Export notes as PDF' })).json()).item;
+      let j = await (await post('/api/requirements/analyze', {})).json(); const job = j.job.id;
+      assert.deepEqual(j.job.ids.sort(), [a1.id, a2.id].sort());
+      r = await post('/api/requirements/analyze', {}); assert.equal(r.status, 409, '한 번에 하나만');
+      const input = await (await fetch(`${api}/api/requirements/input?job=${job}`)).json();
+      assert.equal(input.requirements.length, 2); assert.ok(input.root && input.features);
+      await post('/api/requirements/progress', { job, progress: 120, step: 'Checking #1' });
+      r = await post('/api/requirements/result', { job, results: [{ id: a1.id, status: 'maybe' }] }); assert.equal(r.status, 400, '상태는 reflected|partial|missing');
+      j = await (await post('/api/requirements/result', { job, summary: 'One is in, one is not.', results: [
+        { id: a1.id, status: 'partial', how: 'Tasks are sorted by due date', why: 'Overdue ones are not pinned', evidence: ['dashboard.html renderTodos'], next: 'Pin overdue tasks' },
+        { id: a2.id, status: 'missing', how: 'No export', why: 'Not built yet', next: 'Add an export button' },
+        { id: 9999, status: 'reflected' } ] })).json();
+      assert.deepEqual([j.analyzed, j.skipped], [2, 0]);
+      let list = await (await fetch(`${api}/api/requirements`)).json();
+      assert.equal(list.job.status, 'done'); assert.equal(list.job.summary, 'One is in, one is not.');
+      assert.equal(list.items.find((x) => x.id === a1.id).analysis.status, 'partial');
+      assert.deepEqual(list.items.find((x) => x.id === a1.id).analysis.evidence, ['dashboard.html renderTodos']);
+      await post('/api/requirements', { action: 'update', id: a1.id, title: 'Show overdue tasks first, in red' });
+      list = await (await fetch(`${api}/api/requirements`)).json();
+      assert.equal(list.items.find((x) => x.id === a1.id).analysis.stale, true, '내용이 바뀌면 다시 분석 필요');
+      j = await (await post('/api/requirements/analyze', { ids: [a1.id] })).json(); assert.deepEqual(j.job.ids, [a1.id]);
+      await post('/api/requirements/cancel', { job: j.job.id });
+      await post('/api/requirements', { action: 'remove', id: a2.id });
+      list = await (await fetch(`${api}/api/requirements`)).json();
+      assert.equal(list.items.length, 1); assert.equal(list.job.status, 'cancelled');
     });
 
     await ta('C15 요청(Requests): 에이전트 등록·중복 방지·kind 검증, 답변→answered, 완료/보류/재개', async () => {

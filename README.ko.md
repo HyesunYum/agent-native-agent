@@ -151,7 +151,7 @@ base는 혼자 쓰는 업무 운영 보드입니다. 메모, 할일, 일정을 �
 | 영역 | 탭 | 용도 |
 |---|---|---|
 | **Workspace** | Tasks · Calendar · Notes | 내 데이터. 워크스페이스별로 관리(전환, 추가, 이름 바꾸기, 순서 변경) |
-| **Collaborate** | Evolve · Approvals · Requests | 에이전트와 함께 일하는 곳. 배지는 나를 기다리는 것의 수 |
+| **Collaborate** | Evolve · Approvals · Requests · Requirements | 에이전트와 함께 일하는 곳. 배지는 나를 기다리는 것의 수 |
 | **System** | Stats · Relations · Trustworthiness · Safety · Security | 시스템이 잘 돌아가는지, 믿을 수 있는지. 배지는 위험 점검의 수 |
 
 ### 채팅 — Claude 앱처럼
@@ -192,6 +192,17 @@ Task ─DUE_ON─▶ Day,  Event ─ON─▶ Day           due / date에서 파�
 | `GET /api/graph/neighbors?id=` · `GET /api/graph/trace?id=&depth=&direction=&types=` | 붙어 있는 관계 / 도달 가능한 전체 |
 | `GET /api/graph/schema` | NodeRel의 AI용 스키마 + 이 앱의 관계 의미. 에이전트에게 건네면 됩니다 |
 | `GET /api/stats` → `graph` | 종류·관계별 개수와 `gaps` 세 목록 |
+
+#### Analyze — 온톨로지와 지식그래프
+
+위 그래프는 **고정된 층**입니다. 무엇이 무엇과 이어질 수 있는지를 앱이 정합니다. **Relations › Analyze**는 여기에 **발견하는 층**을 더합니다. 에이전트가 고른 메모·할일·일정을 읽고 두 가지를 씁니다.
+
+- **온톨로지**는 틀입니다. 부모가 있는 클래스(Client ⊂ Organization ⊂ Agent)와 From → To가 있는 관계 종류(`client_of`: Client → Organization)로 이루어집니다.
+- **지식그래프**는 데이터입니다. 그 클래스로 타입이 정해진 개체(Acme는 Client)와 그 관계로 이어진 사실(Acme `client_of` 우리 팀)로 이루어지고, 각각 근거 항목을 가리킵니다.
+
+서버는 결과를 온톨로지 틀로 검사합니다. 클래스와 관계가 있어야 하고, 사실은 From → To를 지켜야 합니다(하위 클래스 포함). 맞지 않는 사실은 버리고 알려 줍니다. 온톨로지는 다음 분석으로 이어지므로 개념 이름이 유지됩니다. 지식그래프는 같은 NodeRel 그래프에 들어갑니다(`kg:<id>`, 근거 항목으로 `MENTIONED_IN`). 그래서 `/api/graph/trace`로 메모에서 그 안의 사람까지 따라갈 수 있습니다. 결과는 [OntoAir](https://poc.aifactory.space/ontoair/)에서 3D 그래프로 열거나 OWL Turtle로 내려받을 수 있습니다.
+
+→ 두 층, 분석 과정, 온톨로지, 지식그래프, 검사, 내보내기를 모두 정리한 글: **[docs/relations.ko.md](docs/relations.ko.md)**
 
 ### Collaborate — 진화 제안 · 승인 요청 · 작업 요청
 

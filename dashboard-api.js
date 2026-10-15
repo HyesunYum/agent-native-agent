@@ -31,6 +31,8 @@ function createDashboardApi(core, opts) {
   const REQUESTS_FILE = opts.REQUESTS_FILE || path.join(path.dirname(EVOLVE_FILE), 'requests.json');
   // 시스템 › Update — 업스트림(agent-native-agent)과 기능 단위 비교 결과와 그 처리 상태
   const UPDATES_FILE = opts.UPDATES_FILE || path.join(path.dirname(EVOLVE_FILE), 'updates.json');
+  // 협업 › Requirements — 사용자의 요청사항과 그 반영 분석(워크스페이스가 아니라 이 ANA 자체에 대한 것이라 하나의 목록)
+  const REQUIREMENTS_FILE = opts.REQUIREMENTS_FILE || path.join(path.dirname(EVOLVE_FILE), 'requirements.json');
   const UPSTREAM_DIR = opts.UPSTREAM_DIR || path.join(path.dirname(EVOLVE_FILE), 'upstream');
   const UPSTREAM_URL = opts.UPSTREAM_URL || 'https://github.com/tykimos/agent-native-agent';
   const UPDATE_TARGET = opts.UPDATE_TARGET || ROOT;   // 비교할 ANA 폴더(기본: 이 ANA). 시험·호스트용으로 바꿀 수 있다
@@ -157,7 +159,11 @@ function createDashboardApi(core, opts) {
   const newId = (p) => p + Date.now().toString(36) + crypto.randomBytes(2).toString('hex');
   const saveData = (s, ws) => { relgraph.pruneLinks(s); writeJsonAtomic(dataFileOf(ws || curWs()), s); };
   // 관계 그래프 — state.json에서 파생되는 NodeRel 인덱스(워크스페이스마다 graph.sqlite)
-  const graph = relgraph.createGraph({ loadData, dataFileOf });
+  // 지식그래프 = 그 워크스페이스의 최신 완료 분석(Relations › Analyze). loadAnalysis는 아래에 정의돼 있지만 요청 때만 불린다.
+  const graph = relgraph.createGraph({ loadData, dataFileOf, loadKg: (ws) => {
+    const j = [...loadAnalysis(ws).jobs].reverse().find((x) => x.status === 'done' && x.graph);
+    return j ? { job: j.id, ontology: j.ontology, graph: j.graph } : null;
+  } });
 
   function loadProposals() {
     const s = readJsonStrict(PROPOSALS_FILE, () => ({ proposals: [] }));
@@ -247,19 +253,92 @@ function createDashboardApi(core, opts) {
   const saveAnalysis = (ws, a) => { a.version = (a.version || 1) + 1; writeJsonAtomic(analysisFileOf(ws), a); };
   const ANALYSIS_KINDS = { notes: 'Note', tasks: 'Task', events: 'Event' };
   const clip = (v, n) => String(v == null ? '' : v).slice(0, n);
-  // 결과 검증·정리 — 크기 상한, id 참조가 맞는 것만 남긴다
-  function cleanAnalysis(body, itemIds) {
-    const o = body.ontology || {}, g = body.graph || {};
+  // 결과 검증·정리 — 크기 상한, id 참조, 그리고 온톨로지 틀(클래스·관계 종류의 domain → range)을 지키는지.
+  // base는 이 워크스페이스에 쌓인 온톨로지 — 에이전트가 거기 있는 id를 다시 써도 알아본다.
+  // 틀을 어긴 사실은 버리고, 클래스를 모르는 개체는 클래스만 비운다. 둘 다 issues로 돌려준다.
+  function cleanAnalysis(body, itemIds, base) {
+    const o = body.ontology || {}, g = body.graph || {}, issues = [];
+    const issue = (kind, msg) => { if (issues.length < 60) issues.push({ kind, msg: clip(msg, 300) }); };
     const classes = (Array.isArray(o.classes) ? o.classes : []).slice(0, 80).map((c) => ({ id: clip(c.id || c.label, 60), label: clip(c.label || c.id, 80), desc: clip(c.desc, 300), parent: c.parent ? clip(c.parent, 60) : '' })).filter((c) => c.id);
-    const cids = new Set(classes.map((c) => c.id));
-    for (const c of classes) if (c.parent && !cids.has(c.parent)) c.parent = '';
     const relations = (Array.isArray(o.relations) ? o.relations : []).slice(0, 80).map((r) => ({ id: clip(r.id || r.label, 60), label: clip(r.label || r.id, 80), domain: clip(r.domain, 60), range: clip(r.range, 60), desc: clip(r.desc, 300) })).filter((r) => r.id);
+    const bc = new Map(((base && base.classes) || []).map((c) => [c.id, c])), br = new Map(((base && base.relations) || []).map((r) => [r.id, r]));
+    const cls = new Map([...bc, ...classes.map((c) => [c.id, c])]), rels = new Map([...br, ...relations.map((r) => [r.id, r])]);
+    for (const c of classes) if (c.parent && !cls.has(c.parent)) { issue('class', `Class "${c.id}": unknown parent "${c.parent}" — cleared`); c.parent = ''; }
+    for (const r of relations) for (const end of ['domain', 'range']) if (r[end] && !cls.has(r[end])) { issue('relation', `Relation "${r.id}": unknown ${end} class "${r[end]}" — cleared (any class allowed)`); r[end] = ''; }
+    // a가 b이거나 b의 하위 클래스인가(부모 사슬, 순환 방지)
+    const isA = (a, b) => { for (let k = a, n = 0; k && n < 50; k = (cls.get(k) || {}).parent, n++) if (k === b) return true; return false; };
     const entities = (Array.isArray(g.entities) ? g.entities : []).slice(0, 400).map((e) => ({ id: clip(e.id || e.label, 80), label: clip(e.label || e.id, 120), class: clip(e.class, 60),
       sources: (Array.isArray(e.sources) ? e.sources : []).map(String).filter((x) => itemIds.has(x)).slice(0, 20) })).filter((e) => e.id);
-    const eids = new Set(entities.map((e) => e.id));
-    const facts = (Array.isArray(g.facts) ? g.facts : []).slice(0, 1200).map((f) => ({ from: clip(f.from, 80), rel: clip(f.rel, 60), to: clip(f.to, 80),
-      sources: (Array.isArray(f.sources) ? f.sources : []).map(String).filter((x) => itemIds.has(x)).slice(0, 20) })).filter((f) => eids.has(f.from) && eids.has(f.to) && f.rel);
-    return { ontology: { classes, relations }, graph: { entities, facts }, summary: clip(body.summary, 1000) };
+    for (const e of entities) if (e.class && !cls.has(e.class)) { issue('entity', `Entity "${e.id}": class "${e.class}" is not in the ontology — class cleared`); e.class = ''; }
+    const ent = new Map(entities.map((e) => [e.id, e]));
+    const facts = [];
+    for (const f0 of (Array.isArray(g.facts) ? g.facts : []).slice(0, 1200)) {
+      const f = { from: clip(f0.from, 80), rel: clip(f0.rel, 60), to: clip(f0.to, 80), sources: (Array.isArray(f0.sources) ? f0.sources : []).map(String).filter((x) => itemIds.has(x)).slice(0, 20) };
+      const tag = `${f.from} —${f.rel}→ ${f.to}`;
+      if (!ent.has(f.from) || !ent.has(f.to)) { issue('fact', `Fact ${tag}: unknown entity — dropped`); continue; }
+      if (!f.rel) { issue('fact', `Fact ${tag}: no relation — dropped`); continue; }
+      const r = rels.get(f.rel);
+      if (!r) { issue('fact', `Fact ${tag}: relation "${f.rel}" is not in the ontology — dropped`); continue; }
+      const fc = ent.get(f.from).class, tc = ent.get(f.to).class;
+      if (r.domain && fc && !isA(fc, r.domain)) { issue('fact', `Fact ${tag}: "${f.rel}" goes from ${r.domain}, but ${f.from} is a ${fc} — dropped`); continue; }
+      if (r.range && tc && !isA(tc, r.range)) { issue('fact', `Fact ${tag}: "${f.rel}" goes to ${r.range}, but ${f.to} is a ${tc} — dropped`); continue; }
+      facts.push(f);
+    }
+    // 이번 결과가 쓴 기존 온톨로지 항목(클래스는 부모 사슬까지)을 붙여, 이 작업만 봐도 틀이 온전하게
+    const own = new Set(classes.map((c) => c.id)), ownR = new Set(relations.map((r) => r.id));
+    const need = (id) => { for (let k = id, n = 0; k && n < 50 && !own.has(k) && bc.has(k); k = bc.get(k).parent, n++) { own.add(k); classes.push({ ...bc.get(k), inherited: true }); } };
+    for (const f of facts) if (!ownR.has(f.rel) && br.has(f.rel)) { ownR.add(f.rel); relations.push({ ...br.get(f.rel), inherited: true }); }
+    for (const e of entities) need(e.class);
+    for (const r of relations) { need(r.domain); need(r.range); }
+    for (const c of [...classes]) need(c.parent);
+    return { ontology: { classes, relations }, graph: { entities, facts }, summary: clip(body.summary, 1000), issues };
+  }
+  // 워크스페이스에 쌓이는 온톨로지 — 회차마다 id로 합친다(나중 설명이 이긴다). 다음 분석의 출발점이 된다.
+  function mergeOntology(base, o) {
+    const strip = ({ inherited, ...x }) => x;
+    const classes = new Map(((base && base.classes) || []).map((c) => [c.id, c])), relations = new Map(((base && base.relations) || []).map((r) => [r.id, r]));
+    for (const c of o.classes) if (!c.inherited) classes.set(c.id, strip(c));
+    for (const r of o.relations) if (!r.inherited) relations.set(r.id, strip(r));
+    return { classes: [...classes.values()].slice(0, 300), relations: [...relations.values()].slice(0, 300), updatedAt: new Date().toISOString() };
+  }
+  // OWL/Turtle로 내보내기(OntoAir 등 외부 뷰어용). 온톨로지 = TBox(owl:Class·ObjectProperty), 지식그래프 = ABox(개체·사실)
+  function analysisTurtle(j, ws) {
+    // '#'는 전각 '＃'로 — 줄 단위로 주석을 걷어 내는 단순한 파서(OntoAir 포함)가 문자열 속 #에서 줄을 자르지 않게
+    const lit = (v) => '"' + String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, '\\n').replace(/#/g, '＃') + '"';
+    const names = new Map(), used = new Set();
+    const local = (ns, id) => {
+      const k = ns + '\u0000' + id; if (names.has(k)) return names.get(k);
+      let n = String(id).normalize('NFC').replace(/[^\p{L}\p{N}_-]+/gu, '_').replace(/^[-_]+|[-_]+$/g, '') || 'x';
+      if (!/^[\p{L}_]/u.test(n)) n = '_' + n;
+      let u = n, i = 2; while (used.has(ns + u)) u = `${n}_${i++}`;
+      used.add(ns + u); names.set(k, `${ns}:${u}`); return `${ns}:${u}`;
+    };
+    const o = j.ontology || { classes: [], relations: [] }, g = j.graph || { entities: [], facts: [] };
+    const baseIri = `https://ana.local/${encodeURIComponent(ws)}/analysis-${j.id}`;
+    const out = ['@prefix owl: <http://www.w3.org/2002/07/owl#> .', '@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .',
+      '@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .', `@prefix ana: <${baseIri}/ontology#> .`, `@prefix kg: <${baseIri}/kg#> .`, '',
+      `ana:Ontology rdf:type owl:Ontology ;\n    rdfs:label ${lit(`ANA analysis ${j.id} (${ws})`)}${j.summary ? ` ;\n    rdfs:comment ${lit(j.summary)}` : ''} .`, '', '# Classes'];
+    for (const c of o.classes) out.push(`${local('ana', c.id)} rdf:type owl:Class ;\n    rdfs:label ${lit(c.label || c.id)}${c.desc ? ` ;\n    rdfs:comment ${lit(c.desc)}` : ''}${c.parent ? ` ;\n    rdfs:subClassOf ${local('ana', c.parent)}` : ''} .`);
+    out.push('', '# Relation types');
+    for (const r of o.relations) out.push(`${local('ana', r.id)} rdf:type owl:ObjectProperty ;\n    rdfs:label ${lit(r.label || r.id)}${r.desc ? ` ;\n    rdfs:comment ${lit(r.desc)}` : ''}${r.domain ? ` ;\n    rdfs:domain ${local('ana', r.domain)}` : ''}${r.range ? ` ;\n    rdfs:range ${local('ana', r.range)}` : ''} .`);
+    out.push('', '# Entities and facts');
+    const factsOf = new Map(); for (const f of g.facts) { if (!factsOf.has(f.from)) factsOf.set(f.from, []); factsOf.get(f.from).push(f); }
+    for (const e of g.entities) {
+      const lines = [`rdf:type ${e.class ? local('ana', e.class) : 'owl:NamedIndividual'}`, `rdfs:label ${lit(e.label || e.id)}`];
+      for (const f of factsOf.get(e.id) || []) lines.push(`${local('ana', f.rel)} ${local('kg', f.to)}`);
+      out.push(`${local('kg', e.id)} ${lines.join(' ;\n    ')} .`);
+    }
+    return out.join('\n') + '\n';
+  }
+  const SHARE_TTL_MS = 24 * 3600 * 1000;
+  // 공유 토큰으로 작업 찾기 — 공개 경로라 ws가 없으므로 모든 워크스페이스를 본다
+  function findShared(token) {
+    if (!/^[0-9a-f]{40}$/.test(token)) return null;
+    for (const w of loadWorkspaces().workspaces) {
+      const j = loadAnalysis(w.id).jobs.find((x) => x.share && x.share.token === token);
+      if (j) return Date.parse(j.share.exp) > Date.now() && j.status === 'done' ? { ws: w.id, job: j } : null;
+    }
+    return null;
   }
 
   function loadRequests() {
@@ -1201,12 +1280,102 @@ function createDashboardApi(core, opts) {
       return sendJson(res, 200, { ok: true, status: it.status, item: it, upstreamDir: UPSTREAM_DIR }), true;
     }
 
+    // ---- 요구사항(Requirements): 사용자가 적고, 에이전트가 반영 여부·방법·안 된 이유를 분석 ----
+    if (p.startsWith('/api/requirements')) {
+      const load = () => { const r = readJsonStrict(REQUIREMENTS_FILE, () => ({ next: 1, items: [], jobNext: 1, jobs: [] })); return r && Array.isArray(r.items) ? r : { next: 1, items: [], jobNext: 1, jobs: [] }; };
+      const save = (r) => { r.version = (r.version || 1) + 1; writeJsonAtomic(REQUIREMENTS_FILE, r); broadcast({ kind: 'requirements', version: r.version }); };
+      const rq = load(); rq.jobs = rq.jobs || []; rq.jobNext = rq.jobNext || 1;
+      const now = new Date().toISOString(), cut = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+      const jobOf = (id) => rq.jobs.find((j) => j.id === Number(id));
+      if (p === '/api/requirements' && req.method === 'GET') return sendJson(res, 200, { items: rq.items, job: rq.jobs[rq.jobs.length - 1] || null }), true;
+      if (p === '/api/requirements/input' && req.method === 'GET') {
+        const j = jobOf(url.searchParams.get('job')); if (!j) return sendJson(res, 404, { error: 'no such analysis' }), true;
+        return sendJson(res, 200, { job: j.id, root: ROOT, features: path.join(ROOT, 'features.json'), changelog: path.join(ROOT, 'CHANGELOG.md'),
+          requirements: rq.items.filter((x) => j.ids.includes(x.id)).map(({ id, title, detail, at, analysis }) => ({ id, title, detail, at, previous: analysis ? { status: analysis.status, at: analysis.at } : null })) }), true;
+      }
+      if (req.method !== 'POST') return sendJson(res, 405, { error: 'method not allowed' }), true;
+      if (!csrfOk(req)) return sendJson(res, 403, { error: 'forbidden (origin/content-type)' }), true;
+      const body = await jsonBody(req, res, 2 * 1024 * 1024); if (!body) return true;
+      if (p === '/api/requirements') {
+        if (body.action === 'add') {
+          const title = cut(body.title, 200); if (!title) return sendJson(res, 400, { error: 'title required' }), true;
+          const it = { id: rq.next++, title, detail: cut(body.detail, 4000), by: actor(req), at: now, updatedAt: now, analysis: null };
+          rq.items.push(it); save(rq); audit(actor(req), 'requirement.add', title.slice(0, 80)); return sendJson(res, 200, { ok: true, item: it }), true;
+        }
+        const it = rq.items.find((x) => x.id === Number(body.id)); if (!it) return sendJson(res, 404, { error: 'not found' }), true;
+        if (body.action === 'update') {
+          const title = cut(body.title ?? it.title, 200); if (!title) return sendJson(res, 400, { error: 'title required' }), true;
+          const changed = title !== it.title || cut(body.detail ?? it.detail, 4000) !== it.detail;
+          it.title = title; it.detail = cut(body.detail ?? it.detail, 4000); it.updatedAt = now;
+          if (changed && it.analysis) it.analysis.stale = true;      // 내용이 바뀌면 이전 분석은 '다시 분석 필요'
+          save(rq); return sendJson(res, 200, { ok: true, item: it }), true;
+        }
+        if (body.action === 'remove') { rq.items = rq.items.filter((x) => x !== it); save(rq); audit(actor(req), 'requirement.remove', it.title.slice(0, 80)); return sendJson(res, 200, { ok: true }), true; }
+        return sendJson(res, 400, { error: 'action must be add|update|remove' }), true;
+      }
+      if (p === '/api/requirements/analyze') {
+        if (rq.jobs.some((j) => j.status === 'running')) return sendJson(res, 409, { error: 'An analysis is already running — wait for it or cancel it' }), true;
+        const ids = (Array.isArray(body.ids) && body.ids.length ? body.ids.map(Number) : rq.items.map((x) => x.id)).filter((id) => rq.items.some((x) => x.id === id));
+        if (!ids.length) return sendJson(res, 400, { error: 'Add a requirement first' }), true;
+        const j = { id: rq.jobNext++, status: 'running', progress: 0, step: 'Waiting for the agent', ids, at: now, updatedAt: now };
+        rq.jobs.push(j); while (rq.jobs.length > 10) rq.jobs.shift(); save(rq); audit(actor(req), 'requirement.analyze', `${ids.length} requirements`);
+        return sendJson(res, 200, { ok: true, job: j }), true;
+      }
+      const j = jobOf(body.job); if (!j) return sendJson(res, 404, { error: 'no such analysis' }), true;
+      if (j.status !== 'running') return sendJson(res, 409, { error: `analysis is ${j.status}` }), true;
+      if (p === '/api/requirements/progress') {
+        const pct = Number(body.progress); if (Number.isFinite(pct)) j.progress = Math.max(j.progress, Math.min(99, Math.round(pct)));
+        if (body.step) j.step = cut(body.step, 200); j.updatedAt = now; save(rq); return sendJson(res, 200, { ok: true }), true;
+      }
+      if (p === '/api/requirements/result') {
+        const STATUSES = ['reflected', 'partial', 'missing'];
+        const results = (Array.isArray(body.results) ? body.results : []).filter((r) => j.ids.includes(Number(r.id)) && STATUSES.includes(r.status));
+        if (!results.length) return sendJson(res, 400, { error: 'results[] with id and status (reflected|partial|missing) required' }), true;
+        for (const r of results) {
+          const it = rq.items.find((x) => x.id === Number(r.id)); if (!it) continue;
+          it.analysis = { status: r.status, how: cut(r.how, 3000), why: cut(r.why, 3000), next: cut(r.next, 1500),
+            evidence: (Array.isArray(r.evidence) ? r.evidence : []).map((e) => cut(e, 300)).filter(Boolean).slice(0, 20), at: now, job: j.id, stale: false };
+        }
+        Object.assign(j, { status: 'done', progress: 100, step: 'Done', summary: cut(body.summary, 2000), analyzed: results.length, updatedAt: now, doneAt: now });
+        save(rq); audit(actor(req), 'requirement.analyzed', `${results.length} results`);
+        return sendJson(res, 200, { ok: true, analyzed: results.length, skipped: j.ids.length - results.length }), true;
+      }
+      if (p === '/api/requirements/fail' || p === '/api/requirements/cancel') {
+        j.status = p.endsWith('fail') ? 'failed' : 'cancelled'; j.step = j.status === 'failed' ? cut(body.reason || 'Failed', 300) : 'Cancelled'; j.updatedAt = now;
+        save(rq); return sendJson(res, 200, { ok: true }), true;
+      }
+      return sendJson(res, 404, { error: 'unknown requirements route' }), true;
+    }
+
     // ---- 관계 분석(온톨로지 · 지식그래프) ----
+    // 에이전트에게 보내는 지시문의 주소. 브라우저 주소(예: 로그인 게이트웨이 뒤의 base.anahub.io)는 에이전트의 curl이
+    // 통과하지 못하므로, 같은 컴퓨터에서 도는 에이전트가 바로 닿는 이 서버의 로컬 주소를 알려 준다.
+    if (p === '/api/agent-base' && req.method === 'GET') {
+      const b = String(opts.BIND || '127.0.0.1'), host = b === '0.0.0.0' || b === '::' ? '127.0.0.1' : b.includes(':') ? `[${b}]` : b;
+      return sendJson(res, 200, { host: opts.PORT ? `${host}:${opts.PORT}` : '' }), true;
+    }
+    // 공개 읽기: OntoAir 같은 외부 뷰어가 로그인 없이 가져가는 .ttl. 40자리 토큰 + 24시간 + 완료된 작업만.
+    // anahub 게이트웨이는 share-access(HEAD → 204)로 토큰을 확인한 뒤에만 이 경로를 통과시킨다.
+    const sm = /^\/api\/analysis\/shared\/([0-9a-f]{40})\/[\w.-]{1,80}\.ttl$/.exec(p);   // 끝 이름은 뷰어에 보이는 파일 이름
+    if ((sm || p === '/api/analysis/share-access') && (req.method === 'GET' || req.method === 'HEAD')) {
+      const hit = findShared(sm ? sm[1] : String(url.searchParams.get('t') || ''));
+      if (!sm) { res.writeHead(hit ? 204 : 404, { 'cache-control': 'no-store' }); return res.end(), true; }
+      if (!hit) return sendJson(res, 404, { error: 'link expired or unknown' }), true;
+      const body = Buffer.from(analysisTurtle(hit.job, hit.ws));
+      res.writeHead(200, { 'content-type': 'text/turtle; charset=utf-8', 'content-length': body.length, 'cache-control': 'no-store', 'access-control-allow-origin': '*', 'x-content-type-options': 'nosniff' });
+      return res.end(req.method === 'HEAD' ? undefined : body), true;
+    }
     if (p.startsWith('/api/analysis')) {
       const ws = curWs(), a = loadAnalysis(ws);
       const job = (id) => a.jobs.find((j) => j.id === Number(id));
       const tell = () => broadcast({ kind: 'analysis', version: a.version });
-      if (p === '/api/analysis' && req.method === 'GET') return sendJson(res, 200, { jobs: a.jobs, latest: a.jobs[a.jobs.length - 1] || null }), true;
+      if (p === '/api/analysis' && req.method === 'GET') return sendJson(res, 200, { jobs: a.jobs, latest: a.jobs[a.jobs.length - 1] || null, ontology: a.ontology || null }), true;
+      if (p === '/api/analysis/ttl' && req.method === 'GET') {
+        const j = job(url.searchParams.get('id')); if (!j || j.status !== 'done') return sendJson(res, 404, { error: 'no finished analysis' }), true;
+        const body = Buffer.from(analysisTurtle(j, ws));
+        res.writeHead(200, { 'content-type': 'text/turtle; charset=utf-8', 'content-length': body.length, 'cache-control': 'no-store', 'content-disposition': `attachment; filename="ana-analysis-${j.id}.ttl"` });
+        return res.end(body), true;
+      }
       if (p === '/api/analysis/input' && req.method === 'GET') {
         const j = job(url.searchParams.get('id')); if (!j) return sendJson(res, 404, { error: 'no such analysis' }), true;
         const st = loadData(ws), want = new Set(j.itemIds);
@@ -1215,7 +1384,10 @@ function createDashboardApi(core, opts) {
           ...st.items.filter((t) => want.has(t.id)).map((t) => ({ id: t.id, kind: 'Task', title: t.title || t.text || '', due: t.due || '', done: !!t.done })),
           ...st.events.filter((e) => want.has(e.id)).map((e) => ({ id: e.id, kind: 'Event', title: e.title || '', date: e.date || '', time: e.time || '', done: !!e.done })),
         ];
-        return sendJson(res, 200, { id: j.id, focus: j.focus, items, links: (st.links || []).filter((l) => want.has(l.from) && want.has(l.to)) }), true;
+        return sendJson(res, 200, { id: j.id, focus: j.focus, items, links: (st.links || []).filter((l) => want.has(l.from) && want.has(l.to)),
+          ontology: j.useBase && a.ontology ? { classes: a.ontology.classes, relations: a.ontology.relations,
+            note: 'The ontology built so far in this workspace. Reuse these ids for the same concepts; add classes/relations only for new ones. You may omit unchanged ones from your result.' } : null,
+          rules: 'Every entity.class must be a class id and every fact.rel a relation id (yours or the existing ontology). A fact must respect its relation\'s domain → range, sub-classes included. Facts that break this are dropped and listed in the response under issues.' }), true;
       }
       if (req.method !== 'POST') return sendJson(res, 405, { error: 'method not allowed' }), true;
       if (!csrfOk(req)) return sendJson(res, 403, { error: 'forbidden (origin/content-type)' }), true;
@@ -1232,13 +1404,26 @@ function createDashboardApi(core, opts) {
           ...(kinds.includes('events') ? st.events.filter((e) => !openOnly || !e.done).map((e) => e.id) : []),
         ];
         if (!ids.length) return sendJson(res, 400, { error: 'Nothing to analyze in the chosen items' }), true;
-        const j = { id: a.next++, status: 'running', progress: 0, step: 'Waiting for the agent', kinds, openOnly, focus: clip(body.focus, 300), itemIds: ids,
+        const j = { id: a.next++, status: 'running', progress: 0, step: 'Waiting for the agent', kinds, openOnly, focus: clip(body.focus, 300), itemIds: ids, useBase: body.useBase !== false && !!a.ontology,
           counts: { notes: kinds.includes('notes') ? st.notes.length : 0, tasks: ids.filter((x) => st.items.some((t) => t.id === x)).length, events: ids.filter((x) => st.events.some((e) => e.id === x)).length }, at: now, updatedAt: now };
         a.jobs.push(j); while (a.jobs.length > 10) a.jobs.shift();
         saveAnalysis(ws, a); audit(actor(req), 'analysis.start', `#${j.id} ${ids.length} items`); tell();
         return sendJson(res, 200, { ok: true, job: j }), true;
       }
+      if (p === '/api/analysis/ontology/reset') {
+        a.ontology = null; saveAnalysis(ws, a); audit(actor(req), 'analysis.ontology.reset', ws); tell();
+        return sendJson(res, 200, { ok: true }), true;
+      }
       const j = job(body.id); if (!j) return sendJson(res, 404, { error: 'no such analysis' }), true;
+      // 외부 뷰어용 공개 링크(24시간). 이미 있고 6시간 넘게 남았으면 그대로 쓴다.
+      if (p === '/api/analysis/share') {
+        if (j.status !== 'done') return sendJson(res, 409, { error: 'Only a finished analysis can be opened elsewhere' }), true;
+        if (!j.share || Date.parse(j.share.exp) - Date.now() < 6 * 3600 * 1000) {
+          j.share = { token: crypto.randomBytes(20).toString('hex'), exp: new Date(Date.now() + SHARE_TTL_MS).toISOString() };
+          saveAnalysis(ws, a); audit(actor(req), 'analysis.share', `#${j.id}`);
+        }
+        return sendJson(res, 200, { ok: true, path: `/api/analysis/shared/${j.share.token}/ana-analysis-${j.id}.ttl`, exp: j.share.exp }), true;
+      }
       if (p === '/api/analysis/progress') {
         if (j.status !== 'running') return sendJson(res, 409, { error: `analysis is ${j.status}` }), true;
         const pct = Number(body.progress);
@@ -1248,11 +1433,12 @@ function createDashboardApi(core, opts) {
       }
       if (p === '/api/analysis/result') {
         if (j.status !== 'running') return sendJson(res, 409, { error: `analysis is ${j.status}` }), true;
-        const r2 = cleanAnalysis(body, new Set(j.itemIds));
-        if (!r2.ontology.classes.length && !r2.graph.entities.length) return sendJson(res, 400, { error: 'result needs ontology.classes or graph.entities' }), true;
+        const r2 = cleanAnalysis(body, new Set(j.itemIds), j.useBase ? a.ontology : null);
+        if (!r2.ontology.classes.length && !r2.graph.entities.length) return sendJson(res, 400, { error: 'result needs ontology.classes or graph.entities', issues: r2.issues }), true;
         Object.assign(j, r2, { status: 'done', progress: 100, step: 'Done', updatedAt: now, doneAt: now });
+        a.ontology = mergeOntology(j.useBase ? a.ontology : null, r2.ontology);
         saveAnalysis(ws, a); audit(actor(req), 'analysis.done', `#${j.id} ${r2.ontology.classes.length} classes, ${r2.graph.entities.length} entities`); tell();
-        return sendJson(res, 200, { ok: true, classes: r2.ontology.classes.length, relations: r2.ontology.relations.length, entities: r2.graph.entities.length, facts: r2.graph.facts.length }), true;
+        return sendJson(res, 200, { ok: true, classes: r2.ontology.classes.length, relations: r2.ontology.relations.length, entities: r2.graph.entities.length, facts: r2.graph.facts.length, issues: r2.issues }), true;
       }
       if (p === '/api/analysis/fail' || p === '/api/analysis/cancel') {
         if (j.status !== 'running') return sendJson(res, 409, { error: `analysis is ${j.status}` }), true;
