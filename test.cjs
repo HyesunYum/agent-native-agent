@@ -1075,6 +1075,43 @@ async function integration() {
       assert.equal(list.items.length, 1); assert.equal(list.job.status, 'cancelled');
     });
 
+    await ta('C19 감정물 반환(워크스페이스 앱): apps 켜기, 등록·공동 감정인·엑셀 가져오기→반환대기→반환, 워크스페이스별 분리', async () => {
+      const wsPost = (ws, p, body) => fetch(`${api}${p}`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-ana-workspace': ws }, body: JSON.stringify(body) });
+      const wsGet = async (ws) => (await fetch(`${api}/api/evidence`, { headers: { 'x-ana-workspace': ws } })).json();
+      const w = (await (await post('/api/workspaces', { action: 'add', name: 'Evidence test' })).json()).workspace;
+      let j = await (await post('/api/workspaces', { action: 'apps', id: w.id, apps: ['evidence', 'nope'] })).json();
+      assert.deepEqual(j.workspaces.find((x) => x.id === w.id).apps, ['evidence'], '모르는 앱은 버린다');
+      let r = await wsPost(w.id, '/api/evidence', { action: 'add', no: '2026-1', examiner: '김도윤', items: '휴대폰 2점' });
+      assert.equal(r.status, 400, '새 접수번호는 의뢰관서가 필요');
+      const a1 = (await (await wsPost(w.id, '/api/evidence', { action: 'add', no: '2026-1', agency: '서울강남경찰서 형사과', examiner: '김도윤', items: '휴대폰 2점', loc: 'B-3' })).json()).item;
+      assert.equal(a1.st, 'ing'); assert.equal(a1.role, '주');
+      r = await wsPost(w.id, '/api/evidence', { action: 'add', no: '2026-1', examiner: '김도윤', items: 'x' }); assert.equal(r.status, 409, '같은 감정인 중복 금지');
+      const a2 = (await (await wsPost(w.id, '/api/evidence', { action: 'add', no: '2026-1', examiner: '이서연', items: '면봉 3점' })).json()).item;
+      assert.equal(a2.role, '부', '두 번째 감정인은 부');
+      j = await (await wsPost(w.id, '/api/evidence', { action: 'import', rows: [
+        { no: '2026-1', agency: '서울강남경찰서', examiner: '김도윤', items: '휴대폰 2점' },          // 기존 → 반환대기로
+        { no: '2026-2', agency: '경기남부경찰청 사이버수사대', examiner: '박준혁', items: '외장하드 2점', date: '2026-10-08' },
+        { no: '', agency: 'x', examiner: 'y' } ] })).json();
+      assert.deepEqual([j.result.n, j.result.nN, j.result.nU, j.result.nA, j.result.nE, j.result.skipped], [2, 1, 1, 1, 1, 1]);
+      let d = await wsGet(w.id);
+      assert.equal(d.agencies.length, 2, '“서울강남경찰서”는 기존 관서로 묶인다');
+      assert.equal(d.assigns.find((a) => a.id === a1.id).st, 'ready');
+      assert.equal(d.cases.find((c) => c.no === '2026-2').date, '2026-10-08');
+      r = await wsPost(w.id, '/api/evidence', { action: 'return', ids: [a2.id], receiver: '홍길수' }); assert.equal(r.status, 400, '반환대기만 반환');
+      j = await (await wsPost(w.id, '/api/evidence', { action: 'return', ids: [a1.id, a2.id], receiver: '홍길수 경위', by: '김도윤' })).json();
+      assert.deepEqual(j.record.ids, [a1.id]);
+      d = await wsGet(w.id);
+      assert.equal(d.assigns.find((a) => a.id === a1.id).st, 'done'); assert.equal(d.returns.length, 1);
+      r = await wsPost(w.id, '/api/evidence', { action: 'status', id: a1.id, st: 'ing' }); assert.equal(r.status, 409, '반환완료는 되돌리지 않는다');
+      r = await wsPost(w.id, '/api/evidence', { action: 'remove', id: a1.id }); assert.equal(r.status, 409);
+      await wsPost(w.id, '/api/evidence', { action: 'edit', id: a2.id, loc: '냉장 2', memo: '냉장 인계' });
+      assert.equal((await wsGet(w.id)).assigns.find((a) => a.id === a2.id).loc, '냉장 2');
+      assert.equal((await wsGet('default')).assigns.length, 0, '다른 워크스페이스에는 보이지 않는다');
+      const page = await fetch(`${api}/evidence.html`); assert.equal(page.status, 200);
+      assert.equal((await fetch(`${api}/vendor/xlsx.full.min.js`, { method: 'HEAD' })).status, 200);
+      await post('/api/workspaces', { action: 'remove', id: w.id });
+    });
+
     await ta('C15 요청(Requests): 에이전트 등록·중복 방지·kind 검증, 답변→answered, 완료/보류/재개', async () => {
       let r = await post('/api/requests', { requests: [{ kind: 'decision', title: 'Pick one', options: ['A', 'B'] }, { kind: 'access', title: 'Share calendar' }] });
       let j = await r.json(); assert.equal(j.added, 2);

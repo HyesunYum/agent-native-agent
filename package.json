@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tykimos/noderel": "github:tykimos/NodeRel#2a1e84987449c0dde5fb7506bacf08cb4fa63372",
-    "modern-screenshot": "^4.7.0"
+    "modern-screenshot": "^4.7.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   }
 }

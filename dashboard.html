@@ -1041,6 +1041,11 @@ body.sys-mode .ws-combo { display: none; }
 /* 콤보가 빠진 자리 — Chip·그리기·새로고침·프로필 묶음을 Workspace일 때와 같이 오른쪽 끝에 붙인다 */
 @media (max-width: 768px) { body.sys-mode .topnav .mode-toggle { margin-left: auto; } }
 .topnav .tab[hidden] { display: none; }
+#evidenceView.on { display: flex; overflow: hidden; }
+#evidenceFrame { flex: 1; width: 100%; height: 100%; border: 0; display: block; background: var(--bg); }
+.ws-menu .ws-app { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding: 10px 12px 6px; border-top: 1px solid var(--line-2); font-size: 13px; font-weight: 600; color: var(--text-sub); cursor: pointer; }
+.ws-menu .ws-app input { width: 16px; height: 16px; accent-color: var(--acc); }
+@media (max-width: 768px) { #evidenceView.on { padding-bottom: calc(58px + var(--safe-b)); } }
 .bottomnav { display: none; }
 @media (max-width: 768px) {
   .modeseg { display: none; }
@@ -1248,41 +1253,43 @@ body.sys-mode .ws-combo { display: none; }
 
 <!-- ◀ 메인: 할일 / 일정 / 진화 -->
 <div id="main">
-  <nav class="topnav" aria-label="Main menu" role="tablist">
+  <nav class="topnav" aria-label="메인 메뉴" role="tablist">
     <div class="topnav-brand"><img src="/ana-logo.png" alt="ANA logo"><span class="bname">ANA</span></div>
     <!-- 영역 전환(PC) — 모바일에서는 하단 메뉴(.bottomnav)가 같은 일을 한다 -->
-    <div class="seg modeseg" role="tablist" aria-label="Area">
-      <button data-area="ws" class="on" role="tab">Workspace</button><button data-area="collab" role="tab">Collaborate<span class="tbadge" data-collabbadge>0</span></button><button data-area="sys" role="tab">System<span class="tbadge" data-sysbadge>0</span></button>
+    <div class="seg modeseg" role="tablist" aria-label="영역">
+      <button data-area="ws" class="on" role="tab">워크스페이스</button><button data-area="collab" role="tab">협업<span class="tbadge" data-collabbadge>0</span></button><button data-area="sys" role="tab">시스템<span class="tbadge" data-sysbadge>0</span></button>
     </div>
     <div class="ws-combo" id="wsCombo">
-      <button class="ws-btn" id="wsBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Workspace">
+      <button class="ws-btn" id="wsBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="워크스페이스">
         <span class="wsn" id="wsName">Base Workspace</span><span class="caret">▼</span></button>
       <div class="ws-menu" id="wsMenu" hidden>
-        <div class="ws-label">Workspace</div>
-        <div class="ws-list" id="wsList" role="listbox" aria-label="Workspaces"></div>
-        <button class="ws-add" id="wsAddBtn">＋ Add workspace</button>
+        <div class="ws-label">워크스페이스</div>
+        <div class="ws-list" id="wsList" role="listbox" aria-label="워크스페이스 목록"></div>
+        <button class="ws-add" id="wsAddBtn">＋ 워크스페이스 추가</button>
         <form class="ws-new" id="wsNew" hidden>
-          <input id="wsNewName" maxlength="60" placeholder="Workspace name" autocomplete="off" aria-label="New workspace name">
-          <button type="submit">Add</button>
+          <input id="wsNewName" maxlength="60" placeholder="워크스페이스 이름" autocomplete="off" aria-label="새 워크스페이스 이름">
+          <button type="submit">추가</button>
         </form>
         <div class="ws-err" id="wsErr" hidden></div>
+        <label class="ws-app"><input type="checkbox" id="wsAppEvidence"> 이 워크스페이스에 감정물 반환 메뉴 표시</label>
       </div>
     </div>
     <div class="tabstrip">
-      <button class="tab on" data-view="todo" data-group="ws" role="tab" aria-selected="true">Tasks</button>
-      <button class="tab" data-view="schedule" data-group="ws" role="tab" aria-selected="false">Calendar</button>
-      <button class="tab" data-view="memo" data-group="ws" role="tab" aria-selected="false">Notes</button>
-      <button class="tab" data-view="evolve" data-group="collab" role="tab" aria-selected="false">Evolve<span class="tbadge" id="evoBadge">0</span></button>
-      <button class="tab" data-view="approvals" data-group="collab" role="tab" aria-selected="false">Approvals<span class="tbadge" id="apprBadge">0</span></button>
-      <button class="tab" data-view="requests" data-group="collab" role="tab" aria-selected="false">Requests<span class="tbadge" id="reqBadge">0</span></button>
-      <button class="tab" data-view="requirements" data-group="collab" role="tab" aria-selected="false">Requirements</button>
-      <button class="tab" data-view="files" data-group="sys" role="tab" aria-selected="false">Files</button>
-      <button class="tab" data-view="stats" data-group="sys" role="tab" aria-selected="false">Stats</button>
-      <button class="tab" data-view="relations" data-group="sys" role="tab" aria-selected="false">Relations</button>
-      <button class="tab" data-view="reliability" data-group="sys" role="tab" aria-selected="false">Trustworthiness</button>
-      <button class="tab" data-view="safety" data-group="sys" role="tab" aria-selected="false">Safety</button>
-      <button class="tab" data-view="security" data-group="sys" role="tab" aria-selected="false">Security</button>
-      <button class="tab" data-view="update" data-group="sys" role="tab" aria-selected="false">Update<span class="tbadge" id="updBadge">0</span></button>
+      <button class="tab on" data-view="todo" data-group="ws" role="tab" aria-selected="true">할 일</button>
+      <button class="tab" data-view="schedule" data-group="ws" role="tab" aria-selected="false">일정</button>
+      <button class="tab" data-view="memo" data-group="ws" role="tab" aria-selected="false">메모</button>
+      <button class="tab" data-view="evidence" data-group="ws" data-wsapp="evidence" role="tab" aria-selected="false" hidden>감정물 반환</button>
+      <button class="tab" data-view="evolve" data-group="collab" role="tab" aria-selected="false">진화<span class="tbadge" id="evoBadge">0</span></button>
+      <button class="tab" data-view="approvals" data-group="collab" role="tab" aria-selected="false">승인<span class="tbadge" id="apprBadge">0</span></button>
+      <button class="tab" data-view="requests" data-group="collab" role="tab" aria-selected="false">요청<span class="tbadge" id="reqBadge">0</span></button>
+      <button class="tab" data-view="requirements" data-group="collab" role="tab" aria-selected="false">요구사항</button>
+      <button class="tab" data-view="files" data-group="sys" role="tab" aria-selected="false">파일</button>
+      <button class="tab" data-view="stats" data-group="sys" role="tab" aria-selected="false">통계</button>
+      <button class="tab" data-view="relations" data-group="sys" role="tab" aria-selected="false">관계</button>
+      <button class="tab" data-view="reliability" data-group="sys" role="tab" aria-selected="false">신뢰성</button>
+      <button class="tab" data-view="safety" data-group="sys" role="tab" aria-selected="false">안전</button>
+      <button class="tab" data-view="security" data-group="sys" role="tab" aria-selected="false">보안</button>
+      <button class="tab" data-view="update" data-group="sys" role="tab" aria-selected="false">업데이트<span class="tbadge" id="updBadge">0</span></button>
     </div>
     <button id="modeToggle" class="mode-toggle" role="switch" aria-checked="false" aria-label="Chip mode">
       <span class="knob"></span>Chip
@@ -1293,19 +1300,19 @@ body.sys-mode .ws-combo { display: none; }
     <button id="chipScanBtn" class="chip-scan" aria-label="Find and register elements that can't be picked as chips yet" title="Register unpickable elements as chips">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
     </button>
-    <button id="meBtn" class="avatar-btn" aria-label="My profile" aria-haspopup="menu"><span class="av">?</span></button>
+    <button id="meBtn" class="avatar-btn" aria-label="내 프로필" aria-haspopup="menu"><span class="av">?</span></button>
   </nav>
   <div class="me-menu" id="meMenu" role="menu" hidden>
     <button id="menuEditInfo" role="menuitem">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      Edit My Info</button>
+      내 정보 수정</button>
     <button id="menuSettings" role="menuitem">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Settings</button>
+      설정</button>
     <div class="mm-sep" role="separator"></div>
     <button id="menuLogout" role="menuitem">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      <span>Log out<span class="mm-hint" id="menuLogoutHint" hidden></span></span></button>
+      <span>로그아웃<span class="mm-hint" id="menuLogoutHint" hidden></span></span></button>
   </div>
 
   <!-- 할일 -->
@@ -1320,6 +1327,9 @@ body.sys-mode .ws-combo { display: none; }
     <div id="todoList"></div>
     <div class="empty" id="todoEmpty">No tasks yet — add one with ＋ Task or via chat</div>
   </div></section>
+
+  <!-- 감정물 반환(워크스페이스 앱 — workspaces.json의 apps에 'evidence'가 있는 워크스페이스에서만 보인다) -->
+  <section class="view" id="evidenceView" role="tabpanel"><iframe id="evidenceFrame" title="감정물 반환"></iframe></section>
 
   <!-- 일정 (달력) -->
   <section class="view" id="scheduleView" role="tabpanel"><div class="wrap">
@@ -1556,10 +1566,10 @@ body.sys-mode .ws-combo { display: none; }
   </div>
 </div>
 <!-- 하단 메뉴(모바일): Workspace = 할일·일정·메모 / System = 통계·요청·진화·관계 -->
-<nav class="bottomnav" aria-label="Area">
-  <button data-area="ws" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Workspace</button>
-  <button data-area="collab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Collaborate<span class="tbadge" data-collabbadge>0</span></button>
-  <button data-area="sys"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>System<span class="tbadge" data-sysbadge>0</span></button>
+<nav class="bottomnav" aria-label="영역">
+  <button data-area="ws" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>워크스페이스</button>
+  <button data-area="collab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>협업<span class="tbadge" data-collabbadge>0</span></button>
+  <button data-area="sys"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>시스템<span class="tbadge" data-sysbadge>0</span></button>
 </nav>
 <!-- 모델 선택 시트(Claude Code 세션) — Claude 앱과 같은 모양 -->
 <div class="limit-pop" id="limitPop" role="status" hidden></div>
@@ -2457,7 +2467,7 @@ async function loadMe() {
   // 프로필 메뉴의 로그아웃: 앞단 로그아웃 경로가 있을 때만 활성. 없으면 이유를 보여 주고 비활성.
   $('menuLogout').disabled = !logoutUrl;
   $('menuLogoutHint').hidden = !!logoutUrl;
-  $('menuLogoutHint').textContent = signedIn ? 'Set ANA_LOGOUT_URL to enable' : 'Single-user mode — no sign-in';
+  $('menuLogoutHint').textContent = signedIn ? 'ANA_LOGOUT_URL을 설정하면 사용할 수 있어요' : '단일 사용자 모드 — 로그인 없음';
   renderTodos(); renderMemos(); renderUpcoming();
 }
 /* 아바타 클릭 → 드롭다운 메뉴(Edit My Info / Settings) */
@@ -2914,12 +2924,16 @@ let appMode = 'ws';
 const lastTab = { ws: 'todo', collab: 'evolve', sys: 'stats' };
 const AREAS = ['ws', 'collab', 'sys'];
 try { const m = localStorage.getItem('ana-area'); if (AREAS.includes(m)) appMode = m; const t = JSON.parse(localStorage.getItem('ana-area-tabs') || '{}'); Object.assign(lastTab, t); } catch {}
+// 워크스페이스 앱 탭(data-wsapp)은 지금 워크스페이스의 apps에 있을 때만 보인다
+const bootWsTab = lastTab.ws;
+const wsHasApp = (app) => { const w = workspaces.find((x) => x.id === currentWs); return !!(w && Array.isArray(w.apps) && w.apps.includes(app)); };
+const tabHidden = (t) => t.dataset.group !== appMode || (!!t.dataset.wsapp && !wsHasApp(t.dataset.wsapp));
 // 탭 선택은 click()이 아니라 이 함수로 — 클릭 처리 중인 버튼에 다시 click()을 부르면 브라우저가 무시한다
 function selectTab(b) {
     if (b.dataset.group && b.dataset.group !== appMode) applyArea(b.dataset.group);
     if ($('memoView').classList.contains('on') && b.dataset.view !== 'memo') cleanupEmptyMemos(); // 메모 탭 이탈 시 빈 메모 정리(진화 #3)
     document.querySelectorAll('.topnav .tab').forEach((x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', String(on)); });
-    ['todo', 'schedule', 'memo', 'evolve', 'approvals', 'requests', 'requirements', 'stats', 'relations', 'reliability', 'safety', 'security', 'update', 'files'].forEach((v) => $(v + 'View').classList.toggle('on', b.dataset.view === v));
+    ['todo', 'schedule', 'memo', 'evidence', 'evolve', 'approvals', 'requests', 'requirements', 'stats', 'relations', 'reliability', 'safety', 'security', 'update', 'files'].forEach((v) => $(v + 'View').classList.toggle('on', b.dataset.view === v));
     lastTab[appMode] = b.dataset.view;
     revealTab(b);
     try { localStorage.setItem('ana-area-tabs', JSON.stringify(lastTab)); } catch {}
@@ -2931,6 +2945,7 @@ function selectTab(b) {
     if (b.dataset.view === 'files') loadFiles(filesPath);
     if (b.dataset.view === 'stats') renderStats();
     if (b.dataset.view === 'relations') renderRelations();
+    if (b.dataset.view === 'evidence') loadEvidenceFrame();
 }
 document.querySelectorAll('.topnav .tab').forEach((b) => { b.onclick = () => selectTab(b); });
 // 고른 탭이 가려져 있으면 보이게 밀고, 양옆에 더 있는지 가장자리 흐림으로 알린다
@@ -2946,12 +2961,12 @@ function applyArea(mode) {
   appMode = AREAS.includes(mode) ? mode : 'ws';
   document.body.classList.toggle('sys-mode', appMode !== 'ws');   // 워크스페이스 콤보는 Workspace 영역에서만
   document.querySelectorAll('[data-area]').forEach((x) => { const on = x.dataset.area === appMode; x.classList.toggle('on', on); x.setAttribute('aria-selected', String(on)); });
-  document.querySelectorAll('.topnav .tab[data-group]').forEach((t) => { t.hidden = t.dataset.group !== appMode; });
+  document.querySelectorAll('.topnav .tab[data-group]').forEach((t) => { t.hidden = tabHidden(t); });
   try { localStorage.setItem('ana-area', appMode); } catch {}
 }
 function setAppMode(mode, view) {
   applyArea(mode);
-  const b = document.querySelector(`.topnav .tab[data-group="${appMode}"][data-view="${view || lastTab[appMode]}"]`) || document.querySelector(`.topnav .tab[data-group="${appMode}"]`);
+  const b = document.querySelector(`.topnav .tab[data-group="${appMode}"][data-view="${view || lastTab[appMode]}"]:not([hidden])`) || document.querySelector(`.topnav .tab[data-group="${appMode}"]:not([hidden])`);
   if (b) selectTab(b);
 }
 document.querySelectorAll('[data-area]').forEach((b) => b.onclick = () => setAppMode(b.dataset.area));
@@ -2964,7 +2979,7 @@ function updateSysBadge() {
   setAreaBadge('data-sysbadge', trustRisk + badgeN('updBadge'));
 }
 // 영역 적용은 스크립트가 다 읽힌 뒤에 — 탭 클릭이 아래쪽에서 선언되는 상태 변수를 건드려도 TDZ에 걸리지 않게
-document.querySelectorAll('.topnav .tab[data-group]').forEach((t) => { t.hidden = t.dataset.group !== appMode; });
+document.querySelectorAll('.topnav .tab[data-group]').forEach((t) => { t.hidden = tabHidden(t); });
 setTimeout(() => setAppMode(appMode), 0);
 
 /* ================= 모달 (수동 추가) ================= */
@@ -3869,6 +3884,7 @@ function connect() {
       case 'target': if (d.user === youKey && d.target !== streamTarget) switchStream(); break;
       case 'evolve': if ($('evolveView').classList.contains('on')) refreshEvolve(); else refreshEvolve(); break;
       case 'requests': refreshRequests(); break;
+      case 'evidence': try { $('evidenceFrame').contentWindow.evRefresh?.(); } catch {} break;
       case 'updates': refreshUpdates(); break;
       case 'requirements': if ($('requirementsView').classList.contains('on')) refreshRequirements(); break;
       case 'analysis': if ($('relationsView').classList.contains('on')) refreshAnalysis(); break;
@@ -3884,6 +3900,32 @@ function connect() {
 }
 /* ================= 워크스페이스 ================= */
 const wsById = (id) => workspaces.find((w) => w.id === id);
+// 워크스페이스 앱: 탭 보이기/숨기기, 숨겨진 탭을 보고 있었다면 첫 탭으로, 처음 로드 땐 기억한 앱 탭으로 돌아간다
+let wsAppsBooted = false;
+function applyWsApps() {
+  document.querySelectorAll('.topnav .tab[data-wsapp]').forEach((t) => { t.hidden = tabHidden(t); });
+  $('wsAppEvidence').checked = wsHasApp('evidence');
+  const ev = document.querySelector('.topnav .tab[data-view="evidence"]');
+  if (ev.classList.contains('on') && ev.hidden && appMode === 'ws') setAppMode('ws', 'todo');
+  else if (ev.classList.contains('on')) loadEvidenceFrame();
+  if (!wsAppsBooted && currentWs) {
+    wsAppsBooted = true;
+    if (appMode === 'ws' && bootWsTab === 'evidence' && !ev.hidden) selectTab(ev);
+  }
+}
+// 앱 화면은 iframe — 워크스페이스가 바뀌면 그 워크스페이스로 다시 연다
+function loadEvidenceFrame() {
+  const want = `/evidence.html?ws=${encodeURIComponent(currentWs)}`, f = $('evidenceFrame');
+  if (currentWs && f.getAttribute('src') !== want) f.setAttribute('src', want);
+}
+$('wsAppEvidence').onchange = async (e) => {
+  const w = wsById(currentWs); if (!w) return;
+  const apps = new Set(w.apps || []); e.target.checked ? apps.add('evidence') : apps.delete('evidence');
+  let r, j; try { r = await post('/api/workspaces', { action: 'apps', id: w.id, apps: [...apps] }); j = await r.json(); } catch { j = {}; }
+  if (!r || !r.ok) { e.target.checked = !e.target.checked; toast(j.error || '메뉴 설정을 바꾸지 못했습니다'); return; }
+  workspaces = j.workspaces || workspaces; renderWorkspaces();
+  if (e.target.checked) { closeWsMenu(); showTab('evidence'); }
+};
 function renderWorkspaces() {
   const cur = wsById(currentWs);
   $('wsName').textContent = cur ? cur.name : 'Base Workspace';
@@ -3905,6 +3947,7 @@ function renderWorkspaces() {
       <button class="ws-act" data-ws-rename="${id}" aria-label="Rename ${name}" title="Rename">${PEN}</button>${w.id === 'default' ? '' :
       `<button class="ws-act del" data-ws-remove="${id}" aria-label="Delete ${name}" title="Delete">${BIN}</button>`}</div>`;
   }).join('');
+  applyWsApps();
   const f = $('wsList').querySelector('[data-rename-form] input');
   if (f) { f.focus(); f.select(); }
   else if (keepSel) $('wsList').querySelector(keepSel)?.focus();

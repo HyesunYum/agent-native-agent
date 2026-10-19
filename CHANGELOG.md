@@ -5,6 +5,18 @@ All notable changes to ANA. Versions follow the Claude Code plugin version in `.
 
 To bring an existing ANA up to date with these changes, use the [`ana-update`](skills/ana-update/SKILL.md) skill. It compares that ANA with this repo feature by feature and ports only what you pick.
 
+## [Unreleased]
+
+### Added
+
+- **Workspace apps: 감정물 반환 (evidence return).** A workspace can turn on extra menus of its own. Tick *이 워크스페이스에 감정물 반환 메뉴 표시* in the workspace menu (`POST /api/workspaces {action: 'apps'}`) and a **감정물 반환** tab appears next to Tasks · Calendar · Notes, in that workspace only.
+  - Links requesting agency · receipt number · examiner. One receipt can have several examiners, and each pair keeps its own status (감정중 · 반환대기 · 보류 · 반환완료).
+  - **반환 창구 (return desk):** pick the visiting agency and see what each examiner has to bring back, grouped by examiner or by receipt number. Tick the ready items and record the hand-over with the receiver's name.
+  - **내 담당 (examiner screen):** register a receipt, join an existing one as co-examiner, change status, edit items, storage location and notes.
+  - **Excel receipt-register import:** columns are found from their headers (and can be re-mapped), multi-examiner cells are split, merged cells follow the row above, and only the needed columns leave the browser. Checked rows are registered as 반환대기.
+  - **관리:** agencies, examiners and the return history.
+  - Data lives per workspace in `evidence.json` (`/api/evidence`). The page (`evidence.html`) follows ANA's theme, and changes from another device show up right away. SheetJS is served from `/vendor/xlsx.full.min.js`, so no CDN is needed.
+
 ## [0.6.0] — 2026-10-15
 
 ### Added

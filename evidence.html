@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>감정물 반환</title>
+<style>
+/* 감정물 반환 — ANA 워크스페이스 앱(대시보드의 '감정물 반환' 탭 안에 iframe으로 뜬다).
+   화면: 반환 창구(의뢰관서별 현황) · 내 담당(감정인 입력) · 관리 · 엑셀 접수처리부 가져오기.
+   색은 부모(ANA) 테마 토큰을 그대로 받아 쓰고(syncTheme), 혼자 열면 아래 기본값을 쓴다. */
+:root {
+  --bg: #f2f4f6; --surface: #ffffff; --surface-2: #eaeef2; --line: #d9e0e6;
+  --ink: #16202a; --ink-2: #485663; --ink-3: #7b8894;
+  --accent: #155e75; --accent-ink: #ffffff; --accent-weak: #e1eff3;
+  --ing: #4b5a69; --ing-bg: #e6ebf0; --ready: #9a4a06; --ready-bg: #fcedd6;
+  --done: #17713a; --done-bg: #dff2e5; --hold: #ad2318; --hold-bg: #fae3e0;
+  --shadow: 0 1px 2px rgba(16,32,42,.06), 0 4px 14px rgba(16,32,42,.06);
+  --f-body: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r: 10px; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1318; --surface: #161d24; --surface-2: #1e2730; --line: #29333d;
+  --ink: #e5eaef; --ink-2: #a7b3be; --ink-3: #75828e; --accent: #62b4cb; --accent-ink: #0b1a20; --accent-weak: #15303a;
+  --ing: #a9b6c3; --ing-bg: #25303a; --ready: #f1b65e; --ready-bg: #3a2a12; --done: #72cf91; --done-bg: #14301f; --hold: #f38a7f; --hold-bg: #3b1a17;
+  --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e1318; --surface: #161d24; --surface-2: #1e2730; --line: #29333d;
+  --ink: #e5eaef; --ink-2: #a7b3be; --ink-3: #75828e; --accent: #62b4cb; --accent-ink: #0b1a20; --accent-weak: #15303a;
+  --ing: #a9b6c3; --ing-bg: #25303a; --ready: #f1b65e; --ready-bg: #3a2a12; --done: #72cf91; --done-bg: #14301f; --hold: #f38a7f; --hold-bg: #3b1a17;
+  --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14.5px; line-height: 1.5; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+
+.subnav { position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--line); }
+.subnav-in { max-width: 1240px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.subnav .ttl { font-weight: 700; font-size: 15px; white-space: nowrap; }
+main { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 18px 60px; }
+
+.desk { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; align-items: start; }
+.aglist { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; position: sticky; top: 70px; }
+.lbl { display: block; font-size: 12px; font-weight: 600; color: var(--ink-3); letter-spacing: .04em; margin: 2px 4px 8px; }
+.search { width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
+.ags { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; }
+.ag { text-align: left; border: 0; background: none; padding: 10px; border-radius: 8px; display: grid; gap: 2px; }
+.ag:hover { background: var(--surface-2); }
+.ag[aria-current="true"] { background: var(--accent-weak); }
+.ag .n { font-weight: 600; }
+.ag[aria-current="true"] .n { color: var(--accent); }
+.ag .c { font-size: 12.5px; color: var(--ink-3); }
+.ag .c b { color: var(--ready); font-weight: 600; }
+
+.panel { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.phead { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 20px; }
+.phead h1, .minehead h1, .imhead h1 { font-size: 21px; }
+.phead .sub { color: var(--ink-3); font-size: 13px; margin-top: 2px; }
+.kpis { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 14px; display: flex; align-items: baseline; gap: 8px; }
+.kpi .v { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.kpi .l { font-size: 12.5px; color: var(--ink-3); }
+.kpi.ready .v { color: var(--ready); }
+
+.tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 9px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: none; padding: 6px 14px; border-radius: 7px; font-weight: 600; font-size: 13.5px; color: var(--ink-2); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.chk { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--ink-2); cursor: pointer; }
+.chk input { width: 17px; height: 17px; accent-color: var(--accent); }
+
+.group { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.ghead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 12px 16px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.ghead .gt { font-weight: 700; font-size: 15.5px; }
+.ghead .gm { color: var(--ink-3); font-size: 13px; }
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 13px; white-space: nowrap; }
+.btn:hover { border-color: var(--ink-3); }
+.btn.pri { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.ghost { border-color: transparent; background: none; color: var(--ink-2); }
+.btn.danger { color: var(--hold); }
+
+.row { display: grid; grid-template-columns: 28px minmax(120px, 1.1fr) minmax(0, 1.6fr) auto auto; gap: 6px 14px; align-items: center; padding: 11px 16px; border-top: 1px solid var(--line); }
+.row:first-of-type { border-top: 0; }
+.row.sel { background: var(--accent-weak); }
+.row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
+.row .k { font-weight: 600; }
+.row .k small { display: block; font-weight: 400; font-size: 12.5px; color: var(--ink-3); font-family: var(--f-body); }
+.row .it { color: var(--ink-2); min-width: 0; }
+.row .it small { display: block; color: var(--ink-3); font-size: 12.5px; }
+.loc { font-family: var(--f-mono); font-size: 12.5px; border: 1px dashed var(--ink-3); color: var(--ink-2); padding: 1px 7px; border-radius: 4px; white-space: nowrap; }
+.pill { font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; justify-self: end; }
+.pill.ing { color: var(--ing); background: var(--ing-bg); }
+.pill.ready { color: var(--ready); background: var(--ready-bg); }
+.pill.done { color: var(--done); background: var(--done-bg); }
+.pill.hold { color: var(--hold); background: var(--hold-bg); }
+.role { font-size: 11.5px; font-weight: 600; color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 0 5px; margin-left: 6px; }
+
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--r); padding: 28px; text-align: center; color: var(--ink-3); }
+.empty .btn { margin-top: 12px; }
+.hist { font-size: 13px; color: var(--ink-2); display: flex; flex-direction: column; gap: 6px; }
+.hist h3 { font-size: 13px; color: var(--ink-3); font-weight: 600; letter-spacing: .04em; }
+.hist div { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.selbar { position: sticky; bottom: 12px; z-index: 15; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--ink); color: var(--bg); padding: 10px 12px 10px 18px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+.selbar .t { font-weight: 600; flex: 1; min-width: 0; }
+.selbar .btn.ghost { color: var(--bg); }
+
+.minehead, .imhead { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; }
+.who { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-3); }
+.who select { padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-weight: 600; color: var(--ink); }
+.grow { flex: 1; }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.fchip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.fchip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.card .top1 { display: flex; align-items: flex-start; gap: 10px; }
+.card .cno { font-size: 16px; font-weight: 600; }
+.card .ag2 { font-size: 13px; color: var(--ink-3); }
+.card .top1 .pill { margin-left: auto; }
+.card .meta { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; color: var(--ink-2); }
+.card .co { font-size: 12.5px; color: var(--ink-3); }
+.stseg { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface-2); border-radius: 9px; padding: 3px; gap: 3px; }
+.stseg button { border: 0; background: none; padding: 8px 4px; border-radius: 7px; font-weight: 600; font-size: 13.5px; color: var(--ink-2); }
+.stseg button[aria-pressed="true"].ing { background: var(--surface); color: var(--ing); box-shadow: var(--shadow); }
+.stseg button[aria-pressed="true"].ready { background: var(--ready-bg); color: var(--ready); }
+.stseg button[aria-pressed="true"].hold { background: var(--hold-bg); color: var(--hold); }
+.card .foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-3); }
+.edit { display: grid; gap: 8px; }
+.fld { display: grid; gap: 4px; font-size: 12.5px; color: var(--ink-3); font-weight: 600; min-width: 0; }
+.fld input, .fld select { padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font-weight: 400; font-size: 14.5px; width: 100%; }
+.frow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.acts { display: flex; justify-content: flex-end; gap: 8px; }
+
+.adm { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.adm .wide { grid-column: 1 / -1; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); min-width: 0; }
+.box h2 { font-size: 15px; padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+.box h2 .btn { margin-left: auto; }
+.tw { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th, td { text-align: left; padding: 9px 16px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 12px; color: var(--ink-3); font-weight: 600; letter-spacing: .03em; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr:last-child td { border-bottom: 0; }
+
+.drop { background: var(--surface); border: 2px dashed var(--line); border-radius: 14px; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; cursor: pointer; }
+.drop.over { border-color: var(--accent); background: var(--accent-weak); }
+.drop .big { font-size: 17px; font-weight: 700; }
+.drop .sm { color: var(--ink-3); font-size: 13px; }
+.drop input[type="file"] { display: none; }
+.how { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.how div { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; font-size: 13.5px; color: var(--ink-2); }
+.how b { display: block; color: var(--ink); margin-bottom: 4px; font-size: 14px; }
+.back { border: 0; background: none; color: var(--accent); font-weight: 600; padding: 0; }
+.fbar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 14px; font-size: 13.5px; }
+.fbar .fn { font-weight: 600; }
+.fbar select, .fbar input { padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); }
+.fbar input { width: 64px; }
+details.mapbox { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+details.mapbox summary { padding: 11px 16px; cursor: pointer; font-weight: 600; font-size: 14px; }
+details.mapbox summary span { font-weight: 400; color: var(--ink-3); font-size: 13px; margin-left: 6px; }
+.maps { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; padding: 4px 16px 14px; }
+.maps .fld small { font-weight: 400; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.maps .req::after { content: " *"; color: var(--hold); }
+.ignored { padding: 0 16px 14px; font-size: 12.5px; color: var(--ink-3); }
+.sumchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.imtable td small { display: block; font-size: 12px; color: var(--ink-3); }
+.imtable tr.sel td { background: var(--accent-weak); }
+.imtable tr.off td:not(:last-child) { color: var(--ink-3); }
+.imtable td { vertical-align: top; white-space: normal; min-width: 70px; }
+.imtable td:first-child, .imtable th:first-child { width: 36px; min-width: 36px; padding-right: 0; }
+.imtable td.mono { white-space: nowrap; }
+.imtable input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
+.imtable select { padding: 4px 6px; border: 1px solid var(--hold); border-radius: 6px; background: var(--surface); font-size: 13px; }
+.badge { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; display: inline-block; }
+.badge.new { color: var(--accent); background: var(--accent-weak); }
+.badge.upd { color: var(--ready); background: var(--ready-bg); }
+.badge.ready, .badge.done { color: var(--ing); background: var(--ing-bg); }
+.badge.err, .badge.noex { color: var(--hold); background: var(--hold-bg); }
+.info { font-size: 13px; padding: 9px 12px; border-radius: 8px; background: var(--accent-weak); color: var(--accent); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.info.err { background: var(--hold-bg); color: var(--hold); }
+
+.ovl { position: fixed; inset: 0; z-index: 50; background: rgba(10,18,24,.45); display: grid; place-items: center; padding: 16px; }
+.dlg { background: var(--surface); border-radius: 14px; width: min(520px, 100%); max-height: calc(100% - 32px); overflow: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
+.dlg h2 { font-size: 18px; }
+.note { font-size: 13px; color: var(--ink-3); }
+.slip { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.slip .sh { background: var(--surface-2); padding: 8px 12px; font-weight: 600; font-size: 13.5px; }
+.slip .sr { padding: 7px 12px; border-top: 1px solid var(--line); display: flex; gap: 10px; font-size: 13.5px; flex-wrap: wrap; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 20px; z-index: 60; background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 10px; font-weight: 600; font-size: 13.5px; max-width: calc(100% - 32px); }
+.loading { padding: 40px; text-align: center; color: var(--ink-3); }
+
+@media (max-width: 860px) {
+  .subnav-in { padding: 8px 16px; }
+  .subnav .ttl { display: none; }
+  main { padding-inline: 16px; padding-block: 14px 110px; }
+  .desk { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .aglist { position: static; padding: 10px; }
+  .ags { flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 2px; }
+  .ag { flex: 0 0 auto; border: 1px solid var(--line); }
+  .ag[aria-current="true"] { border-color: var(--accent); }
+  .kpis { margin-left: 0; }
+  .row { grid-template-columns: 28px minmax(0, 1fr) auto; }
+  .row .it { grid-column: 2; grid-row: 2; }
+  .row .locc { grid-column: 3; grid-row: 1; justify-self: end; }
+  .row .pill { grid-column: 3; grid-row: 2; align-self: start; }
+  .cards, .adm { grid-template-columns: minmax(0, 1fr); }
+  .selbar { margin-right: 70px; }        /* ANA 채팅 버튼(오른쪽 아래)과 겹치지 않게 */
+  .search#imQ { width: 100% !important; }
+}
+@media (prefers-reduced-motion: no-preference) { .row, .btn, .ag { transition: background .15s, border-color .15s; } }
+</style>
+</head>
+<body>
+<div class="subnav"><div class="subnav-in">
+  <span class="ttl">감정물 반환</span>
+  <div class="seg" role="tablist" aria-label="감정물 반환 화면">
+    <button role="tab" data-go="desk" aria-pressed="true">반환 창구</button>
+    <button role="tab" data-go="mine" aria-pressed="false">내 담당</button>
+    <button role="tab" data-go="admin" aria-pressed="false">관리</button>
+  </div>
+</div></div>
+<main>
+  <div class="loading" id="loading">불러오는 중…</div>
+  <section id="v-desk" hidden></section>
+  <section id="v-mine" hidden></section>
+  <section id="v-admin" hidden></section>
+  <section id="v-import" hidden></section>
+</main>
+<div class="ovl" id="ovl" hidden><div class="dlg" id="dlg" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="/vendor/xlsx.full.min.js"></script>
+<script>
+/* ---------- 워크스페이스 범위 · 테마 ---------- */
+const WS = new URLSearchParams(location.search).get('ws') || '';
+const api = async (body) => {
+  const h = { 'content-type': 'application/json' }; if (WS) h['x-ana-workspace'] = WS;
+  const r = await fetch('/api/evidence', body ? { method: 'POST', headers: h, body: JSON.stringify(body) } : { headers: h });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || `요청 실패 (${r.status})`);
+  return j;
+};
+// ANA 안에 떠 있으면 부모 테마(밝기·강조색·글꼴)를 따른다
+function syncTheme() {
+  try {
+    if (window.parent === window) return;
+    const pd = parent.document.documentElement, cs = parent.getComputedStyle(pd), root = document.documentElement;
+    root.dataset.theme = pd.dataset.mode === 'dark' ? 'dark' : 'light';
+    const map = { '--bg': '--bg', '--surface': '--surface', '--surface-2': '--surface-2', '--line': '--line', '--ink': '--text', '--ink-2': '--text-sub', '--ink-3': '--text-weak', '--accent': '--acc', '--accent-weak': '--acc-weak' };
+    for (const [k, v] of Object.entries(map)) { const val = cs.getPropertyValue(v).trim(); if (val) root.style.setProperty(k, val); }
+    root.style.setProperty('--accent-ink', '#ffffff');
+    root.style.setProperty('--f-body', parent.getComputedStyle(parent.document.body).fontFamily);
+  } catch {}
+}
+syncTheme();
+try { if (window.parent !== window) new MutationObserver(syncTheme).observe(parent.document.documentElement, { attributes: true }); } catch {}
+
+/* ---------- 상태 ---------- */
+const ST = { ing: '감정중', ready: '반환대기', hold: '보류', done: '반환완료' };
+let S = { agencies: [], examiners: [], cases: [], assigns: [], returns: [], version: 0 };
+const U = { view: 'desk', ag: '', mode: 'ex', onlyReady: false, sel: new Set(), q: '', me: '', mf: 'open', editing: null };
+try { U.me = localStorage.getItem('ana-ev-me') || ''; U.view = localStorage.getItem('ana-ev-view') || 'desk'; } catch {}
+if (U.view === 'import') U.view = 'mine';
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ex = (id) => S.examiners.find((e) => e.id === id) || { id, name: '(삭제된 감정인)', dept: '' };
+const ag = (id) => S.agencies.find((a) => a.id === id) || { id, name: '(알 수 없는 관서)' };
+const cs = (no) => S.cases.find((c) => c.no === no) || { no, ag: '', date: '', title: '' };
+const byCase = (no) => S.assigns.filter((a) => a.no === no);
+const pill = (st) => `<span class="pill ${st}">${ST[st]}</span>`;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => (t.hidden = true), 2800); }
+function groupBy(list, key) { const m = new Map(); for (const x of list) { const k = key(x); if (!m.has(k)) m.set(k, []); m.get(k).push(x); } return m; }
+
+async function refresh() {
+  try { S = await api(); } catch (e) { $('loading').hidden = false; $('loading').textContent = `불러오지 못했습니다: ${e.message}`; return; }
+  $('loading').hidden = true;
+  if (!S.examiners.some((e) => e.id === U.me)) U.me = (S.examiners[0] || {}).id || '';
+  if (!S.agencies.some((a) => a.id === U.ag)) {
+    const withReady = S.agencies.find((a) => S.assigns.some((x) => x.st === 'ready' && cs(x.no).ag === a.id));
+    U.ag = (withReady || S.agencies[0] || {}).id || '';
+  }
+  for (const id of [...U.sel]) if (!S.assigns.some((a) => a.id === id && a.st === 'ready')) U.sel.delete(id);
+  render();
+}
+window.evRefresh = refresh;   // ANA가 서버 알림(kind: evidence)을 받으면 부른다
+async function act(body, okMsg) {
+  try { const r = await api(body); await refresh(); if (okMsg) toast(typeof okMsg === 'function' ? okMsg(r) : okMsg); return r; }
+  catch (e) { toast(e.message); return null; }
+}
+
+/* ---------- 반환 창구 ---------- */
+function renderDesk() {
+  if (!S.agencies.length) {
+    $('v-desk').innerHTML = `<div class="empty">아직 등록된 감정물이 없습니다.<br>내 담당에서 엑셀 접수처리부를 가져오거나 접수 건을 등록하세요.<br><button class="btn pri" data-imopen>엑셀 접수처리부 가져오기</button></div>`;
+    return;
+  }
+  const q = U.q.trim();
+  const agStats = (id) => { const l = S.assigns.filter((a) => cs(a.no).ag === id && a.st !== 'done'); return { open: l.length, ready: l.filter((a) => a.st === 'ready').length }; };
+  const agMatches = (a) => !q || a.name.includes(q) || S.cases.some((c) => c.ag === a.id && c.no.includes(q));
+  const agHtml = S.agencies.filter(agMatches).map((a) => { const s = agStats(a.id); return `<button class="ag" data-ag="${a.id}" aria-current="${a.id === U.ag}"><span class="n">${esc(a.name)}</span><span class="c"><b>반환대기 ${s.ready}</b> · 미반환 ${s.open}</span></button>`; }).join('') || `<div class="note" style="padding:10px">일치하는 관서나 접수번호가 없습니다</div>`;
+
+  const A = ag(U.ag);
+  const open = S.assigns.filter((a) => cs(a.no).ag === U.ag && a.st !== 'done');
+  const list = (U.onlyReady ? open.filter((a) => a.st === 'ready') : open).sort((a, b) => a.no.localeCompare(b.no));
+  const cnt = (st) => open.filter((a) => a.st === st).length;
+  const co = (a) => byCase(a.no).filter((b) => b.id !== a.id).map((b) => ex(b.ex).name);
+  const box = (a) => a.st === 'ready' ? `<input type="checkbox" data-pick="${a.id}" ${U.sel.has(a.id) ? 'checked' : ''} aria-label="${esc(a.no)} ${esc(ex(a.ex).name)} 선택">` : '<span></span>';
+  let groups = '';
+  if (U.mode === 'ex') {
+    for (const [eid, rows] of groupBy(list, (a) => a.ex)) {
+      const e = ex(eid), r = rows.filter((a) => a.st === 'ready').length;
+      groups += `<div class="group"><div class="ghead"><span class="gt">${esc(e.name)}</span><span class="gm">${esc(e.dept)} · 반환대기 ${r} / ${rows.length}건</span></div>` +
+        rows.map((a) => `<div class="row ${U.sel.has(a.id) ? 'sel' : ''}">${box(a)}<div class="k mono">${esc(a.no)}<small>${esc(cs(a.no).title)}</small></div><div class="it">${esc(a.items)}${co(a).length ? `<small>공동 감정: ${co(a).map(esc).join(', ')}</small>` : ''}${a.memo ? `<small>메모: ${esc(a.memo)}</small>` : ''}</div><span class="locc"><span class="loc">${esc(a.loc)}</span></span>${pill(a.st)}</div>`).join('') + `</div>`;
+    }
+  } else {
+    for (const [no, rows] of groupBy(list, (a) => a.no)) {
+      const c = cs(no);
+      groups += `<div class="group"><div class="ghead"><span class="gt mono">${esc(no)}</span><span class="gm">${esc(c.title)} · 접수 ${esc(c.date)} · 감정인 ${byCase(no).length}명</span></div>` +
+        rows.map((a) => `<div class="row ${U.sel.has(a.id) ? 'sel' : ''}">${box(a)}<div class="k">${esc(ex(a.ex).name)}<span class="role">${esc(a.role)}</span><small>${esc(ex(a.ex).dept)}</small></div><div class="it">${esc(a.items)}${a.memo ? `<small>${esc(a.memo)}</small>` : ''}</div><span class="locc"><span class="loc">${esc(a.loc)}</span></span>${pill(a.st)}</div>`).join('') + `</div>`;
+    }
+  }
+  if (!groups) groups = `<div class="empty">${U.onlyReady ? '지금 반환할 수 있는 감정물이 없습니다. 체크를 풀면 감정 중인 건까지 보입니다.' : '이 관서에 반환할 감정물이 없습니다.'}</div>`;
+  const hist = S.returns.filter((r) => r.ag === U.ag).slice(-3).reverse();
+  const selEx = new Set([...U.sel].map((id) => (S.assigns.find((a) => a.id === id) || {}).ex));
+
+  $('v-desk').innerHTML = `<div class="desk">
+    <aside class="aglist"><label class="lbl" for="q">의뢰관서</label>
+      <input class="search" id="q" placeholder="관서명 또는 접수번호" value="${esc(U.q)}" autocomplete="off">
+      <div class="ags">${agHtml}</div></aside>
+    <div class="panel">
+      <div class="phead"><div><h1>${esc(A.name)}</h1><div class="sub">미반환 접수 ${new Set(open.map((a) => a.no)).size}건 · 감정인 ${new Set(open.map((a) => a.ex)).size}명</div></div>
+        <div class="kpis"><div class="kpi ready"><span class="v">${cnt('ready')}</span><span class="l">반환대기</span></div><div class="kpi"><span class="v">${cnt('ing')}</span><span class="l">감정중</span></div><div class="kpi"><span class="v">${cnt('hold')}</span><span class="l">보류</span></div></div></div>
+      <div class="tools"><div class="seg" role="group" aria-label="보기 방식"><button data-mode="ex" aria-pressed="${U.mode === 'ex'}">감정인별</button><button data-mode="case" aria-pressed="${U.mode === 'case'}">접수번호별</button></div>
+        <label class="chk"><input type="checkbox" id="onlyReady" ${U.onlyReady ? 'checked' : ''}>반환대기만 보기</label></div>
+      ${groups}
+      ${U.sel.size ? `<div class="selbar"><span class="t">${U.sel.size}건 선택 · 감정인 ${selEx.size}명</span><button class="btn ghost" data-clear>선택 해제</button><button class="btn pri" data-return>반환 처리</button></div>` : ''}
+      ${hist.length ? `<div class="hist"><h3>최근 반환</h3>${hist.map((r) => `<div><span class="mono">${esc(r.at)}</span><span>${esc(r.who)} 수령</span><span>${r.ids.length}건</span><span>처리 ${esc(r.by)}</span></div>`).join('')}</div>` : ''}
+    </div></div>`;
+}
+
+function openReturn() {
+  const items = [...U.sel].map((id) => S.assigns.find((a) => a.id === id)).filter(Boolean);
+  const g = groupBy(items, (a) => a.ex);
+  $('dlg').innerHTML = `<h2>감정물 반환 처리</h2>
+    <div class="note">${esc(ag(U.ag).name)} · 감정물 인수인계 확인</div>
+    ${[...g].map(([eid, rows]) => `<div class="slip"><div class="sh">${esc(ex(eid).name)} 감정인 · ${rows.length}건</div>${rows.map((a) => `<div class="sr"><span class="mono">${esc(a.no)}</span><span>${esc(a.items)}</span><span class="loc">${esc(a.loc)}</span></div>`).join('')}</div>`).join('')}
+    <form id="rf" class="edit">
+      <div class="frow"><label class="fld">수령자 성명<input id="rName" required placeholder="예: 홍길수"></label><label class="fld">직급·소속<input id="rRank" placeholder="예: 경위, 형사3팀"></label></div>
+      <label class="fld">처리자<select id="rBy">${S.examiners.map((e) => `<option ${e.id === U.me ? 'selected' : ''}>${esc(e.name)}</option>`).join('')}</select></label>
+      <label class="chk"><input type="checkbox" id="rOk" required>수령자 신분과 감정물 품목·수량을 확인했습니다</label>
+      <div class="acts"><button type="button" class="btn" data-close>취소</button><button class="btn pri" type="submit">${items.length}건 반환 완료</button></div>
+    </form>`;
+  $('ovl').hidden = false; $('rName').focus();
+  $('rf').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const receiver = `${$('rName').value.trim()} ${$('rRank').value.trim()}`.trim();
+    const r = await act({ action: 'return', ids: items.map((a) => a.id), receiver, by: $('rBy').value }, `${items.length}건 반환 완료 · 수령 ${receiver}`);
+    if (r) { U.sel.clear(); closeDlg(); render(); }
+  });
+}
+
+/* ---------- 내 담당 ---------- */
+function renderMine() {
+  const mine = S.assigns.filter((a) => a.ex === U.me);
+  const F = { open: ['미반환', (a) => a.st !== 'done'], ing: ['감정중', (a) => a.st === 'ing'], ready: ['반환대기', (a) => a.st === 'ready'], hold: ['보류', (a) => a.st === 'hold'], done: ['반환완료', (a) => a.st === 'done'] };
+  const list = mine.filter(F[U.mf][1]).sort((a, b) => b.no.localeCompare(a.no));
+  const card = (a) => {
+    const c = cs(a.no); const co = byCase(a.no).filter((b) => b.id !== a.id).map((b) => `${ex(b.ex).name}(${ST[b.st]})`);
+    const body = U.editing === a.id
+      ? `<form class="edit" data-save="${a.id}"><label class="fld">감정물 품목·수량<input id="eItems" value="${esc(a.items)}"></label>
+          <div class="frow"><label class="fld">보관 위치<input id="eLoc" value="${esc(a.loc)}"></label><label class="fld">역할<select id="eRole"><option ${a.role === '주' ? 'selected' : ''}>주</option><option ${a.role === '부' ? 'selected' : ''}>부</option></select></label></div>
+          <label class="fld">메모<input id="eMemo" value="${esc(a.memo)}" placeholder="인계 시 주의사항 등"></label>
+          <div class="acts"><button type="button" class="btn danger" data-del="${a.id}">삭제</button><span class="grow"></span><button type="button" class="btn" data-cancel>취소</button><button class="btn pri" type="submit">저장</button></div></form>`
+      : `<div class="meta"><span>${esc(a.items)}</span><span class="loc">${esc(a.loc)}</span></div>${a.memo ? `<div class="co">메모: ${esc(a.memo)}</div>` : ''}
+         ${a.st === 'done' ? '' : `<div class="stseg" role="group" aria-label="상태 변경">${['ing', 'ready', 'hold'].map((s) => `<button class="${s}" data-st="${s}" data-id="${a.id}" aria-pressed="${a.st === s}">${ST[s]}</button>`).join('')}</div>`}
+         <div class="foot"><span>${co.length ? `공동 감정: ${co.map(esc).join(', ')}` : '단독 감정'}</span>${a.st === 'done' ? `<span>반환 ${esc(a.doneAt)}</span>` : `<button class="btn ghost" data-edit="${a.id}">수정</button>`}</div>`;
+    return `<article class="card"><div class="top1"><div><div class="cno mono">${esc(a.no)}<span class="role">${esc(a.role)}</span></div><div class="ag2">${esc(ag(c.ag).name)} · ${esc(c.title)}</div></div>${pill(a.st)}</div>${body}</article>`;
+  };
+  const who = S.examiners.length
+    ? `<label class="who">감정인<select id="me">${S.examiners.map((e) => `<option value="${e.id}" ${e.id === U.me ? 'selected' : ''}>${esc(e.name)}${e.dept ? ' · ' + esc(e.dept) : ''}</option>`).join('')}</select></label>` : '';
+  $('v-mine').innerHTML = `<div class="panel">
+    <div class="minehead"><h1>내 담당</h1>${who}<span class="grow"></span><button class="btn" data-imopen>엑셀 접수처리부 가져오기</button><button class="btn pri" data-add>＋ 접수 건 등록</button></div>
+    ${S.examiners.length ? `<div class="filters">${Object.entries(F).map(([k, [t, f]]) => `<button class="fchip" data-mf="${k}" aria-pressed="${U.mf === k}">${t} ${mine.filter(f).length}</button>`).join('')}</div>` : ''}
+    ${!S.examiners.length ? `<div class="empty">아직 감정인이 없습니다. 엑셀 접수처리부를 가져오면 감정인이 함께 등록되고, ＋ 접수 건 등록으로 직접 넣을 수도 있습니다.</div>`
+      : list.length ? `<div class="cards">${list.map(card).join('')}</div>` : `<div class="empty">${esc(ex(U.me).name)} 감정인의 ${F[U.mf][0]} 건이 없습니다.</div>`}
+  </div>`;
+}
+
+function openAdd() {
+  const meName = U.me ? ex(U.me).name : '';
+  $('dlg').innerHTML = `<h2>접수 건 등록</h2>
+    <div class="note">이미 등록된 접수번호를 넣으면 공동 감정인으로 추가됩니다.</div>
+    <form id="af" class="edit">
+      <div class="frow"><label class="fld">접수번호<input id="aNo" class="mono" required placeholder="2026-0000" list="nos" autocomplete="off"></label>
+        <label class="fld">감정인<input id="aEx" required value="${esc(meName)}" list="exs" autocomplete="off"></label></div>
+      <datalist id="nos">${S.cases.map((c) => `<option value="${esc(c.no)}">`).join('')}</datalist>
+      <datalist id="exs">${S.examiners.map((e) => `<option value="${esc(e.name)}">`).join('')}</datalist>
+      <datalist id="ags">${S.agencies.map((a) => `<option value="${esc(a.name)}">`).join('')}</datalist>
+      <div id="aInfo" class="info" hidden></div>
+      <div class="frow"><label class="fld">의뢰관서<input id="aAg" list="ags" autocomplete="off" placeholder="예: 서울강남경찰서 형사과"></label><label class="fld">사건명<input id="aTitle" placeholder="예: 절도 사건"></label></div>
+      <label class="fld">감정물 품목·수량<input id="aItems" required placeholder="예: 휴대폰 2점"></label>
+      <div class="frow"><label class="fld">보관 위치<input id="aLoc" placeholder="예: B-3"></label><label class="fld">역할<select id="aRole"><option value="">자동</option><option>주</option><option>부</option></select></label></div>
+      <div class="acts"><button type="button" class="btn" data-close>취소</button><button class="btn pri" type="submit" id="aSubmit">등록</button></div>
+    </form>`;
+  $('ovl').hidden = false; $('aNo').focus();
+  const check = () => {
+    const no = $('aNo').value.trim(), c = S.cases.find((x) => x.no === no), info = $('aInfo');
+    $('aAg').disabled = $('aTitle').disabled = !!c;
+    if (!c) { info.hidden = true; $('aSubmit').disabled = false; $('aSubmit').textContent = '등록'; return; }
+    $('aAg').value = ag(c.ag).name; $('aTitle').value = c.title;
+    const exName = $('aEx').value.trim(); const already = byCase(no).some((a) => ex(a.ex).name === exName);
+    info.hidden = false; info.className = already ? 'info err' : 'info';
+    info.textContent = already ? `${exName} 감정인은 이미 이 접수 건을 담당하고 있습니다.` : `기존 접수 건 · ${ag(c.ag).name} · 담당 ${byCase(no).map((a) => ex(a.ex).name).join(', ')} → 공동 감정인으로 추가됩니다`;
+    $('aSubmit').disabled = already; $('aSubmit').textContent = '공동 감정인으로 추가';
+  };
+  $('aNo').addEventListener('input', check); $('aEx').addEventListener('input', check);
+  $('af').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const no = $('aNo').value.trim(), examiner = $('aEx').value.trim();
+    const r = await act({ action: 'add', no, examiner, agency: $('aAg').value.trim(), title: $('aTitle').value.trim(), items: $('aItems').value.trim(), loc: $('aLoc').value.trim(), role: $('aRole').value }, `${no} 등록됨 · 감정중`);
+    if (r) { const e = S.examiners.find((x) => x.name === examiner); if (e) setMe(e.id); U.mf = 'open'; closeDlg(); render(); }
+  });
+}
+
+/* ---------- 관리 ---------- */
+function renderAdmin() {
+  const open = S.assigns.filter((a) => a.st !== 'done');
+  const agRows = S.agencies.map((a) => { const l = open.filter((x) => cs(x.no).ag === a.id); return `<tr><td>${esc(a.name)}</td><td class="num">${new Set(l.map((x) => x.no)).size}</td><td class="num">${l.filter((x) => x.st === 'ready').length}</td></tr>`; }).join('');
+  const exRows = S.examiners.map((e) => { const l = open.filter((x) => x.ex === e.id); return `<tr><td>${esc(e.name)}</td><td>${esc(e.dept)}</td><td class="num">${l.length}</td><td class="num">${l.filter((x) => x.st === 'ready').length}</td></tr>`; }).join('');
+  const hRows = [...S.returns].reverse().map((r) => `<tr><td class="mono">${esc(r.at)}</td><td>${esc(ag(r.ag).name)}</td><td>${esc(r.who)}</td><td>${r.ids.map((id) => { const a = S.assigns.find((x) => x.id === id); return a ? `${a.no} ${ex(a.ex).name}` : `#${id}`; }).map(esc).join(', ')}</td><td>${esc(r.by)}</td></tr>`).join('');
+  const none = (n, t) => `<tr><td colspan="${n}" style="color:var(--ink-3)">${t}</td></tr>`;
+  $('v-admin').innerHTML = `<div class="adm">
+    <div class="box"><h2>의뢰관서<button class="btn" data-newag>＋ 추가</button></h2><div class="tw"><table><thead><tr><th>관서명</th><th class="num">미반환 접수</th><th class="num">반환대기</th></tr></thead><tbody>${agRows || none(3, '등록된 관서가 없습니다')}</tbody></table></div></div>
+    <div class="box"><h2>감정인<button class="btn" data-newex>＋ 추가</button></h2><div class="tw"><table><thead><tr><th>이름</th><th>부서</th><th class="num">미반환</th><th class="num">반환대기</th></tr></thead><tbody>${exRows || none(4, '등록된 감정인이 없습니다')}</tbody></table></div></div>
+    <div class="box wide"><h2>반환 이력</h2><div class="tw"><table><thead><tr><th>일시</th><th>의뢰관서</th><th>수령자</th><th>반환 건 (접수번호 · 감정인)</th><th>처리자</th></tr></thead><tbody>${hRows || none(5, '아직 반환 기록이 없습니다')}</tbody></table></div></div>
+  </div>`;
+}
+function openSimple(kind) {
+  const isAg = kind === 'ag';
+  $('dlg').innerHTML = `<h2>${isAg ? '의뢰관서 추가' : '감정인 추가'}</h2><form id="sf" class="edit">
+    <label class="fld">${isAg ? '관서명' : '이름'}<input id="sName" required></label>
+    ${isAg ? '' : '<label class="fld">부서<input id="sDept" placeholder="예: 디지털분석"></label>'}
+    <div class="acts"><button type="button" class="btn" data-close>취소</button><button class="btn pri" type="submit">추가</button></div></form>`;
+  $('ovl').hidden = false; $('sName').focus();
+  $('sf').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const name = $('sName').value.trim();
+    const r = await act(isAg ? { action: 'agency.add', name } : { action: 'examiner.add', name, dept: $('sDept').value.trim() }, `${name} 추가됨`);
+    if (r) closeDlg();
+  });
+}
+
+/* ---------- 엑셀 접수처리부 가져오기 ---------- */
+const FIELDS = [
+  { k: 'no', t: '접수번호', req: true, kw: ['접수번호', '감정번호', '접수no'] },
+  { k: 'ag', t: '의뢰관서', req: true, kw: ['의뢰관서', '의뢰기관', '의뢰처', '관서', '기관'] },
+  { k: 'ex', t: '감정인', req: true, kw: ['감정인', '감정관', '담당감정', '분석자'] },
+  { k: 'items', t: '감정물', kw: ['감정물', '품목', '증거물', '시료', '물품'] },
+  { k: 'qty', t: '수량', kw: ['수량', '개수'] },
+  { k: 'title', t: '사건명', kw: ['사건명', '죄명', '사건'] },
+  { k: 'date', t: '접수일', kw: ['접수일', '일자'] },
+  { k: 'loc', t: '보관 위치', kw: ['보관', '위치'] },
+];
+const IM = { name: '', sheets: null, sheet: '', hdr: 0, cols: {}, pick: new Set(), mine: false, q: '', fix: {}, result: null };
+const norm = (s) => String(s ?? '').replace(/\s+/g, '').toLowerCase();
+const colName = (i) => (i < 26 ? String.fromCharCode(65 + i) : String(i + 1));
+const cleanEx = (s) => s.replace(/\s*(연구관|연구사|연구원|감정관|주무관|박사|선임|책임)\s*$/, '').trim();
+const findEx = (n) => S.examiners.find((e) => e.name === n);
+const findAg = (n) => S.agencies.find((a) => a.name === n) || (n.length >= 4 ? S.agencies.find((a) => a.name.includes(n) || n.includes(a.name)) : undefined);
+
+function setupSheet() {
+  const aoa = IM.sheets[IM.sheet] || [];
+  let best = 0, bestN = -1;
+  for (let r = 0; r < Math.min(aoa.length, 20); r++) {
+    const n = (aoa[r] || []).filter((c) => FIELDS.some((f) => f.kw.some((k) => norm(c).includes(norm(k))))).length;
+    if (n > bestN) { bestN = n; best = r; }
+  }
+  IM.hdr = best; autoCols(); IM.pick.clear(); IM.fix = {}; IM.result = null;
+}
+function autoCols() {
+  const head = IM.sheets[IM.sheet][IM.hdr] || []; const used = new Set(); IM.cols = {};
+  for (const f of FIELDS) {
+    IM.cols[f.k] = -1;
+    find: for (const k of f.kw) for (let i = 0; i < head.length; i++) if (!used.has(i) && norm(head[i]).includes(norm(k))) { IM.cols[f.k] = i; used.add(i); break find; }
+  }
+}
+async function readFile(f) {
+  if (!f) return;
+  if (!window.XLSX) { toast('엑셀 읽기 도구를 불러오지 못했습니다. 서버에서 npm install을 실행했는지 확인하세요'); return; }
+  try {
+    const wb = XLSX.read(await f.arrayBuffer(), { type: 'array', cellDates: true });
+    const sheets = {};
+    for (const n of wb.SheetNames) sheets[n] = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: '', raw: false, dateNF: 'yyyy-mm-dd' });
+    IM.name = f.name; IM.sheets = sheets; IM.sheet = wb.SheetNames[0]; setupSheet(); render();
+  } catch { toast('파일을 읽지 못했습니다. .xlsx, .xls, .csv 파일인지 확인하세요'); }
+}
+
+/* 원본 행 → (접수번호 × 감정인) 단위 항목. 접수번호가 빈 행은 병합 셀로 보고 위 행을 이어받는다 */
+function parseRows() {
+  const aoa = IM.sheets[IM.sheet], c = IM.cols;
+  const get = (row, k) => (c[k] >= 0 ? String(row[c[k]] ?? '').trim() : '');
+  const map = new Map(); let prev = null;
+  for (let r = IM.hdr + 1; r < aoa.length; r++) {
+    const row = aoa[r] || []; const v = {};
+    for (const f of FIELDS) v[f.k] = get(row, f.k);
+    if (!v.no && !v.items && !v.ex) continue;
+    const cont = !v.no && !!prev;
+    if (cont) { for (const k of ['no', 'ag', 'title', 'date', 'ex']) if (!v[k]) v[k] = prev[k]; }
+    else if (v.no) prev = v;
+    const item = v.items ? (v.qty ? (/^\d+$/.test(v.qty) ? `${v.items} ${v.qty}점` : `${v.items} ${v.qty}`) : v.items) : '';
+    const names = v.ex ? v.ex.split(/\s*(?:,|，|·|\/|;|\n|및)\s*/).map(cleanEx).filter(Boolean) : [''];
+    for (const n of names) {
+      const key = `${v.no || '?' + r}|${n || '?' + r}`;
+      let e = map.get(key);
+      if (!e) { e = { key, no: v.no, ag: v.ag, title: v.title, date: v.date, ex: n, items: [], loc: v.loc, rows: [], cont }; map.set(key, e); }
+      if (item) e.items.push(item); if (!e.loc && v.loc) e.loc = v.loc; e.rows.push(r + 1);
+    }
+  }
+  return [...map.values()].map(classify);
+}
+function classify(e) {
+  e.exName = e.ex || IM.fix[e.key] || '';
+  e.newAg = !!e.ag && !findAg(e.ag); e.newEx = !!e.exName && !findEx(e.exName);
+  if (!e.no) [e.state, e.msg] = ['err', '접수번호 없음'];
+  else if (!e.ag && !S.cases.some((c) => c.no === e.no)) [e.state, e.msg] = ['err', '의뢰관서 없음'];
+  else if (!e.exName) [e.state, e.msg] = ['noex', '감정인을 고르세요'];
+  else {
+    const x = findEx(e.exName); const a = x && S.assigns.find((z) => z.no === e.no && z.ex === x.id);
+    if (a && a.st === 'done') [e.state, e.msg] = ['done', `이미 반환완료 ${a.doneAt || ''}`];
+    else if (a && a.st === 'ready') [e.state, e.msg] = ['ready', '이미 반환대기'];
+    else if (a) [e.state, e.msg] = ['upd', `등록됨 · ${ST[a.st]} → 반환대기`];
+    else [e.state, e.msg] = ['new', '신규 등록'];
+  }
+  e.ok = e.state === 'new' || e.state === 'upd';
+  return e;
+}
+
+function renderImport() {
+  const head = `<div class="imhead"><button class="back" data-go="mine">‹ 내 담당</button><h1>엑셀 접수처리부 가져오기</h1></div>`;
+  if (!IM.sheets) {
+    $('v-import').innerHTML = `<div class="panel">${head}
+      <label class="drop" id="drop"><span class="big">접수처리부 엑셀 파일을 여기에 끌어다 놓으세요</span>
+        <span class="sm">.xlsx · .xls · .csv · 제목 행과 병합 셀이 있어도 읽습니다</span>
+        <span class="btn pri">파일 선택</span><input type="file" id="imFile" accept=".xlsx,.xls,.csv"></label>
+      <div class="how">
+        <div><b>필요한 열만 뽑습니다</b>접수번호, 의뢰관서, 감정인, 감정물·수량, 사건명, 접수일, 보관 위치. 열 이름을 보고 자동으로 찾고, 틀리면 직접 고칠 수 있습니다.</div>
+        <div><b>반환할 건만 체크합니다</b>체크한 건이 반환대기로 등록되고, 반환 창구 화면에 바로 나타납니다.</div>
+        <div><b>나머지 열은 저장하지 않습니다</b>피의자, 의뢰인 같은 열은 브라우저에서 읽기만 하고 서버로 보내지 않습니다.</div>
+      </div></div>`;
+    const drop = $('drop');
+    drop.addEventListener('dragover', (ev) => { ev.preventDefault(); drop.classList.add('over'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+    drop.addEventListener('drop', (ev) => { ev.preventDefault(); drop.classList.remove('over'); readFile(ev.dataTransfer.files[0]); });
+    return;
+  }
+  const aoa = IM.sheets[IM.sheet]; const hdrRow = aoa[IM.hdr] || [];
+  const all = parseRows();
+  for (const k of [...IM.pick]) if (!all.some((e) => e.key === k && e.ok)) IM.pick.delete(k);
+  const meName = U.me ? ex(U.me).name : ''; const q = IM.q.trim();
+  const list = all.filter((e) => (!IM.mine || e.exName === meName) && (!q || [e.no, e.ag, e.exName, e.title].some((s) => (s || '').includes(q))));
+  const missing = FIELDS.filter((f) => f.req && IM.cols[f.k] < 0);
+  const firstData = aoa[IM.hdr + 1] || [];
+  const usedCols = new Set(Object.values(IM.cols));
+  const ignored = hdrRow.map((h, i) => [h, i]).filter(([h, i]) => String(h).trim() && !usedCols.has(i)).map(([h]) => h);
+  const cnt = (st) => all.filter((e) => e.state === st).length;
+  const picked = all.filter((e) => IM.pick.has(e.key));
+  const nAg = new Set(picked.filter((e) => e.newAg).map((e) => e.ag)).size, nEx = new Set(picked.filter((e) => e.newEx).map((e) => e.exName)).size;
+  const selectable = list.filter((e) => e.ok); const allOn = selectable.length && selectable.every((e) => IM.pick.has(e.key));
+  const exCell = (e) => e.ex ? `${esc(e.exName)}${e.newEx ? '<small>새 감정인</small>' : ''}`
+    : `<select data-fix="${esc(e.key)}" aria-label="${esc(e.no)} 감정인 선택"><option value="">감정인 선택</option>${S.examiners.map((x) => `<option ${IM.fix[e.key] === x.name ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>`;
+  const rows = list.map((e) => `<tr class="${e.ok ? '' : 'off'} ${IM.pick.has(e.key) ? 'sel' : ''}">
+      <td><input type="checkbox" data-impick="${esc(e.key)}" ${e.ok ? '' : 'disabled'} ${IM.pick.has(e.key) ? 'checked' : ''} aria-label="${esc(e.no)} ${esc(e.exName)} 반환 대상"></td>
+      <td class="mono">${esc(e.no) || '—'}<small>원본 ${e.rows.join(', ')}행${e.cont ? ' · 위 행 이어받음' : ''}</small></td>
+      <td>${esc(e.ag) || '—'}${e.newAg ? '<small>새 의뢰관서</small>' : ''}</td>
+      <td>${esc(e.title)}</td><td>${exCell(e)}</td>
+      <td>${esc(e.items.join(', ')) || '—'}</td>
+      <td>${e.loc ? `<span class="loc">${esc(e.loc)}</span>` : ''}</td>
+      <td><span class="badge ${e.state}">${esc(e.msg)}</span></td></tr>`).join('');
+  const R = IM.result;
+  $('v-import').innerHTML = `<div class="panel">${head}
+    <div class="fbar"><span class="fn">${esc(IM.name)}</span>
+      ${Object.keys(IM.sheets).length > 1 ? `<label>시트 <select id="imSheet">${Object.keys(IM.sheets).map((n) => `<option ${n === IM.sheet ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>` : ''}
+      <label>열 이름 행 <input type="number" id="imHdr" min="1" max="${aoa.length}" value="${IM.hdr + 1}"></label>
+      <span class="grow"></span><button class="btn" data-imreset>다른 파일</button></div>
+    <details class="mapbox" ${missing.length ? 'open' : ''}><summary>열 연결 ${missing.length ? `<span style="color:var(--hold)">필수 열을 찾지 못했습니다: ${missing.map((f) => f.t).join(', ')}</span>` : '<span>자동으로 찾았습니다 · 눌러서 확인</span>'}</summary>
+      <div class="maps">${FIELDS.map((f) => `<label class="fld"><span class="${f.req ? 'req' : ''}">${f.t}</span><select data-col="${f.k}"><option value="-1">— 없음 —</option>${hdrRow.map((h, i) => String(h).trim() ? `<option value="${i}" ${IM.cols[f.k] === i ? 'selected' : ''}>${colName(i)}열 · ${esc(h)}</option>` : '').join('')}</select><small>${IM.cols[f.k] >= 0 ? `예: ${esc(firstData[IM.cols[f.k]]) || '(빈 칸)'}` : '&nbsp;'}</small></label>`).join('')}</div>
+      ${ignored.length ? `<div class="ignored">가져오지 않는 열: ${ignored.map(esc).join(', ')} — 서버로 보내지 않습니다</div>` : ''}</details>
+    ${R ? `<div class="info"><span>${R.n}건을 반환대기로 등록했습니다 (신규 ${R.nN} · 상태 변경 ${R.nU}${R.nA ? ` · 새 의뢰관서 ${R.nA}` : ''}${R.nE ? ` · 새 감정인 ${R.nE}` : ''}${R.skipped ? ` · 건너뜀 ${R.skipped}` : ''})</span><button class="btn" data-goag="${esc(R.ag)}">반환 창구에서 보기</button></div>` : ''}
+    <div class="tools"><div class="sumchips"><span class="badge new">신규 ${cnt('new')}</span><span class="badge upd">상태 변경 가능 ${cnt('upd')}</span><span class="badge ready">이미 반환대기 ${cnt('ready')}</span><span class="badge done">반환완료 ${cnt('done')}</span><span class="badge err">확인 필요 ${cnt('err') + cnt('noex')}</span></div>
+      <span class="grow"></span>${meName ? `<label class="chk"><input type="checkbox" id="imMine" ${IM.mine ? 'checked' : ''}>내 담당만 (${esc(meName)})</label>` : ''}
+      <input class="search" id="imQ" style="width:200px" placeholder="접수번호·관서·감정인" value="${esc(IM.q)}" autocomplete="off"></div>
+    <div class="box"><div class="tw"><table class="imtable"><thead><tr><th><input type="checkbox" id="imAll" ${allOn ? 'checked' : ''} ${selectable.length ? '' : 'disabled'} aria-label="보이는 항목 모두 선택"></th><th>접수번호</th><th>의뢰관서</th><th>사건명</th><th>감정인</th><th>감정물</th><th>보관</th><th>상태</th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="8" style="text-align:center;color:var(--ink-3);padding:24px">${missing.length ? '필수 열을 연결하면 항목이 나타납니다' : '조건에 맞는 항목이 없습니다'}</td></tr>`}</tbody></table></div></div>
+    ${IM.pick.size ? `<div class="selbar"><span class="t">${IM.pick.size}건 선택${nAg ? ` · 새 의뢰관서 ${nAg}` : ''}${nEx ? ` · 새 감정인 ${nEx}` : ''}</span><button class="btn ghost" data-imclear>선택 해제</button><button class="btn pri" data-imcommit>반환대기로 등록</button></div>` : ''}
+  </div>`;
+}
+async function commitImport() {
+  const rows = parseRows().filter((e) => e.ok && IM.pick.has(e.key))
+    .map((e) => ({ no: e.no, agency: e.ag, title: e.title, date: e.date, examiner: e.exName, items: e.items.join(', '), loc: e.loc }));
+  if (!rows.length) return;
+  const r = await act({ action: 'import', rows }, (j) => `${j.result.n}건 반환대기로 등록됨`);
+  if (r) { IM.pick.clear(); IM.result = r.result; render(); }
+}
+
+/* ---------- 공통 ---------- */
+function setMe(id) { U.me = id; try { localStorage.setItem('ana-ev-me', id); } catch {} }
+function render() {
+  for (const v of ['desk', 'mine', 'admin', 'import']) $('v-' + v).hidden = U.view !== v;
+  const tab = U.view === 'import' ? 'mine' : U.view;
+  document.querySelectorAll('.subnav [data-go]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.go === tab));
+  try { localStorage.setItem('ana-ev-view', U.view); } catch {}
+  ({ desk: renderDesk, mine: renderMine, admin: renderAdmin, import: renderImport })[U.view]();
+}
+function closeDlg() { $('ovl').hidden = true; $('dlg').innerHTML = ''; }
+const go = (v) => { U.view = v; U.editing = null; render(); window.scrollTo(0, 0); };
+
+document.addEventListener('click', (e) => {
+  if (e.target === $('ovl')) return closeDlg();
+  const t = e.target.closest('button, input[type="checkbox"]'); if (!t) return;
+  const d = t.dataset;
+  if (d.go) go(d.go);
+  else if (d.ag) { U.ag = d.ag; U.sel.clear(); render(); }
+  else if (d.mode) { U.mode = d.mode; render(); }
+  else if (d.pick) { const id = +d.pick; t.checked ? U.sel.add(id) : U.sel.delete(id); render(); }
+  else if ('clear' in d) { U.sel.clear(); render(); }
+  else if ('return' in d) openReturn();
+  else if (d.mf) { U.mf = d.mf; U.editing = null; render(); }
+  else if (d.st) { const a = S.assigns.find((x) => x.id === +d.id); act({ action: 'status', id: +d.id, st: d.st }, `${a ? a.no : ''} → ${ST[d.st]}`); }
+  else if (d.edit) { U.editing = +d.edit; render(); }
+  else if ('cancel' in d) { U.editing = null; render(); }
+  else if (d.del) {
+    if (t.dataset.armed) { U.editing = null; act({ action: 'remove', id: +d.del }, '삭제했습니다'); }
+    else { t.dataset.armed = '1'; t.textContent = '한 번 더 누르면 삭제'; }
+  }
+  else if ('add' in d) openAdd();
+  else if ('close' in d) closeDlg();
+  else if ('newag' in d) openSimple('ag');
+  else if ('newex' in d) openSimple('ex');
+  else if ('imopen' in d) go('import');
+  else if ('imreset' in d) { IM.sheets = null; IM.result = null; IM.pick.clear(); render(); }
+  else if (d.impick) { t.checked ? IM.pick.add(d.impick) : IM.pick.delete(d.impick); IM.result = null; render(); }
+  else if (t.id === 'imAll') { for (const b of document.querySelectorAll('[data-impick]:not(:disabled)')) t.checked ? IM.pick.add(b.dataset.impick) : IM.pick.delete(b.dataset.impick); render(); }
+  else if ('imclear' in d) { IM.pick.clear(); render(); }
+  else if ('imcommit' in d) commitImport();
+  else if (d.goag !== undefined) { if (d.goag) U.ag = d.goag; U.sel.clear(); U.q = ''; go('desk'); }
+});
+document.addEventListener('change', (e) => {
+  const t = e.target;
+  if (t.id === 'onlyReady') { U.onlyReady = t.checked; render(); }
+  if (t.id === 'me') { setMe(t.value); U.editing = null; render(); }
+  if (t.id === 'imFile') readFile(t.files[0]);
+  if (t.id === 'imSheet') { IM.sheet = t.value; setupSheet(); render(); }
+  if (t.id === 'imHdr') { const n = Math.max(1, Math.min(+t.value || 1, IM.sheets[IM.sheet].length)); IM.hdr = n - 1; autoCols(); IM.pick.clear(); render(); }
+  if (t.dataset.col) { IM.cols[t.dataset.col] = +t.value; IM.pick.clear(); render(); }
+  if (t.dataset.fix !== undefined) { IM.fix[t.dataset.fix] = t.value; render(); }
+  if (t.id === 'imMine') { IM.mine = t.checked; render(); }
+});
+document.addEventListener('input', (e) => {
+  const t = e.target;
+  if (t.id !== 'q' && t.id !== 'imQ') return;
+  const pos = t.selectionStart;
+  if (t.id === 'imQ') { IM.q = t.value; renderImport(); }
+  else {
+    U.q = t.value;
+    const hit = S.cases.find((c) => U.q.trim() && c.no.includes(U.q.trim()));
+    if (hit && hit.ag !== U.ag) { U.ag = hit.ag; U.sel.clear(); }
+    renderDesk();
+  }
+  const n = $(t.id); n.focus(); n.setSelectionRange(pos, pos);
+});
+document.addEventListener('submit', (e) => {
+  const f = e.target; if (!f.dataset.save) return; e.preventDefault();
+  const id = +f.dataset.save;
+  act({ action: 'edit', id, items: $('eItems').value, loc: $('eLoc').value, role: $('eRole').value, memo: $('eMemo').value }, '저장했습니다').then((r) => { if (r) { U.editing = null; render(); } });
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('ovl').hidden) closeDlg(); });
+refresh();
+</script>
+</body>
+</html>

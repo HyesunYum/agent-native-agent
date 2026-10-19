@@ -324,6 +324,26 @@
         "function renderUpdates",
         "UPDATES_FILE"
       ]
+    },
+    {
+      "id": "ws-app-evidence",
+      "title": "Evidence return (workspace app)",
+      "skill": "app-shell",
+      "summary": "Per-workspace extra menu: a workspace whose workspaces.json entry lists apps: ['evidence'] shows a '감정물 반환' tab (toggle in the workspace menu, POST /api/workspaces {action:'apps'}). The tab hosts evidence.html in an iframe scoped to that workspace (?ws=) and themed from ANA. Links requesting agency · receipt number · examiner (one row per receipt × examiner, several examiners per receipt): return desk grouped by examiner or by receipt with select → hand-over record; examiner screen to register, co-assign, change status (감정중 · 반환대기 · 보류) and edit; admin lists and return history; Excel receipt-register import (SheetJS served from /vendor/xlsx.full.min.js) that auto-maps columns, splits multi-examiner cells, follows merged cells, sends only the needed columns and registers checked rows as 반환대기. Data in evidence.json beside the workspace's state.json via /api/evidence.",
+      "copy": [
+        "evidence.js",
+        "evidence.html"
+      ],
+      "anchors": [
+        "/api/evidence",
+        "createEvidenceApi",
+        "data-wsapp",
+        "function applyWsApps",
+        "function loadEvidenceFrame",
+        "evidenceView",
+        "/vendor/xlsx.full.min.js",
+        "action === 'apps'"
+      ]
     }
   ]
 }

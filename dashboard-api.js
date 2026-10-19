@@ -251,6 +251,10 @@ function createDashboardApi(core, opts) {
     return a && Array.isArray(a.jobs) ? a : { next: 1, jobs: [] };
   }
   const saveAnalysis = (ws, a) => { a.version = (a.version || 1) + 1; writeJsonAtomic(analysisFileOf(ws), a); };
+  // 워크스페이스 앱 — 워크스페이스마다 켜는 추가 메뉴(workspaces.json의 apps). 지금은 감정물 반환(evidence.js) 하나.
+  const WS_APPS = ['evidence'];
+  const evidenceApi = require('./evidence.js').createEvidenceApi({
+    fileOf: (ws) => path.join(path.dirname(dataFileOf(ws)), 'evidence.json'), writeJsonAtomic, readJsonStrict, sendJson });
   const ANALYSIS_KINDS = { notes: 'Note', tasks: 'Task', events: 'Event' };
   const clip = (v, n) => String(v == null ? '' : v).slice(0, n);
   // 결과 검증·정리 — 크기 상한, id 참조, 그리고 온톨로지 틀(클래스·관계 종류의 domain → range)을 지키는지.
@@ -656,7 +660,14 @@ function createDashboardApi(core, opts) {
         for (const x of w.workspaces) if (!seen.has(x.id)) next.push(x);
         w.workspaces = next;
         target = null;
-      } else return sendJson(res, 400, { error: 'action must be add|select|rename|remove|reorder' }), true;
+      } else if (body.action === 'apps') {
+        // 이 워크스페이스에서 보일 추가 메뉴 — {id, apps: ['evidence']}. 앱 데이터는 끄더라도 지우지 않는다.
+        target = w.workspaces.find((x) => x.id === body.id);
+        if (!target) return sendJson(res, 404, { error: 'not found' }), true;
+        if (!Array.isArray(body.apps)) return sendJson(res, 400, { error: 'apps must be an array' }), true;
+        target.apps = [...new Set(body.apps.filter((a) => WS_APPS.includes(a)))];
+        audit(me, 'workspace.apps', target.name, target.apps.join(',') || '(none)');
+      } else return sendJson(res, 400, { error: 'action must be add|select|rename|remove|reorder|apps' }), true;
       saveWorkspaces(w);
       broadcast({ kind: 'workspaces', active: w.active });
       return sendJson(res, 200, { ok: true, active: w.active, workspace: target, workspaces: w.workspaces }), true;
@@ -853,6 +864,13 @@ function createDashboardApi(core, opts) {
       return sendJson(res, 200, { ok: true, path: file, name, size: buf.length }), true;
     }
 
+    // 엑셀 읽기(감정물 반환 › 접수처리부 가져오기) — 같은 이유로 npm 의존성을 그대로 내려준다
+    if (p === '/vendor/xlsx.full.min.js' && (req.method === 'GET' || req.method === 'HEAD')) {
+      let body; try { body = await fsp.readFile(path.join(path.dirname(require.resolve('xlsx')), 'dist', 'xlsx.full.min.js')); }
+      catch { return sendJson(res, 404, { error: 'xlsx not installed — run npm install' }), true; }
+      res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'public, max-age=86400' });
+      return res.end(req.method === 'HEAD' ? undefined : body), true;
+    }
     // 화면 캡처 라이브러리(그리기 → 컨텍스트 칩). npm 의존성을 그대로 내려줘 CDN 없이 오프라인에서도 동작한다.
     if (p === '/vendor/modern-screenshot.mjs' && (req.method === 'GET' || req.method === 'HEAD')) {
       let body; try { body = await fsp.readFile(path.join(path.dirname(require.resolve('modern-screenshot/package.json')), 'dist', 'index.mjs')); }
@@ -1279,6 +1297,9 @@ function createDashboardApi(core, opts) {
       broadcast({ kind: 'updates', version: u.version });
       return sendJson(res, 200, { ok: true, status: it.status, item: it, upstreamDir: UPSTREAM_DIR }), true;
     }
+
+    // ---- 감정물 반환(워크스페이스 앱) ----
+    if (await evidenceApi(req, res, url, { ws: curWs(), csrfOk, jsonBody, broadcast, actor: actor(req), audit })) return true;
 
     // ---- 요구사항(Requirements): 사용자가 적고, 에이전트가 반영 여부·방법·안 된 이유를 분석 ----
     if (p.startsWith('/api/requirements')) {
